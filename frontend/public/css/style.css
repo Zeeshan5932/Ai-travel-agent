@@ -98,6 +98,23 @@ button:hover {
     font-size: 2rem;
     font-weight: 700;
 }
+.result img {
+    max-width: 120px;
+    margin-top: 10px;
+}
+
+.result h3 {
+    margin-top: 20px;
+    color: #0077ff;
+}
+
+.result ul {
+    padding-left: 20px;
+}
+
+.result li {
+    margin-bottom: 10px;
+}
 
 /* ===== TRAVEL CONTENT STYLING ===== */
 

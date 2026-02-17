@@ -1,4 +1,6 @@
 # pylint: disable = http-used,print-used,no-self-use
+import os
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
 import datetime
 import operator

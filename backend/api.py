@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage
 import uuid
+import markdown
 
 from agents.agent import Agent
 
@@ -19,6 +20,10 @@ def get_travel_info(request: TravelRequest):
 
     result = agent.graph.invoke({"messages": messages}, config=config)
 
+    raw_markdown = result["messages"][-1].content
+    html_output = markdown.markdown(raw_markdown)
+
     return {
-        "response": result["messages"][-1].content
+        "response": html_output
     }
+
