@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const axios = require("axios");
 const path = require("path");
+const marked = require("marked");
 
 const app = express();
 
@@ -24,7 +25,8 @@ app.post("/search", async (req, res) => {
       query: query,
     });
 
-    res.render("index", { response: apiResponse.data.response });
+    res.render("index", 
+      { response: marked.parse(apiResponse.data.response) });
   } catch (error) {
     res.render("index", { response: "Error fetching travel data." });
   }

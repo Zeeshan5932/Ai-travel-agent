@@ -1,60 +1,327 @@
-body {
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(to right, #4facfe, #00f2fe);
+/* Reset */
+* {
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
 }
 
+/* Body */
+body {
+    font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', sans-serif;
+    background: linear-gradient(135deg, #1f4037, #99f2c8);
+    min-height: 100vh;
+    padding: 40px 20px;
+}
+
+/* Main Container */
 .container {
-    width: 70%;
-    margin: 50px auto;
-    background: white;
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    max-width: 1100px;
+    margin: auto;
+    background: #ffffff;
+    padding: 50px;
+    border-radius: 20px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.6s ease-in-out;
 }
 
+/* Title */
 h1 {
     text-align: center;
-    color: #333;
+    font-size: 2.5rem;
+    color: #1f2937;
+    margin-bottom: 10px;
+    font-weight: 700;
 }
 
+/* Subtitle */
 .subtitle {
     text-align: center;
-    color: gray;
-    margin-bottom: 30px;
+    color: #6b7280;
+    margin-bottom: 35px;
+    font-size: 1rem;
 }
 
+/* Textarea */
 textarea {
     width: 100%;
-    height: 120px;
-    padding: 15px;
-    border-radius: 10px;
-    border: 1px solid #ddd;
+    height: 130px;
+    padding: 18px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
     resize: none;
     font-size: 16px;
+    transition: 0.3s ease;
+    background: #f9fafb;
+    font-family: inherit;
 }
 
+textarea:focus {
+    outline: none;
+    border: 1px solid #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    background: #fff;
+}
+
+/* Button */
 button {
-    margin-top: 15px;
+    margin-top: 20px;
     width: 100%;
     padding: 15px;
     border: none;
-    border-radius: 10px;
-    background: #4facfe;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #10b981, #059669);
     color: white;
-    font-size: 18px;
+    font-size: 17px;
+    font-weight: 600;
     cursor: pointer;
-    transition: 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 button:hover {
-    background: #00c6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
 }
 
+/* Result Section */
 .result {
+    margin-top: 45px;
+    padding: 30px;
+    background: #f9fafb;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+/* Result Heading */
+.result h2 {
+    margin-bottom: 30px;
+    color: #1f2937;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* ===== TRAVEL CONTENT STYLING ===== */
+
+/* Section Headers (Flights, Hotels) */
+.travel-content h3 {
     margin-top: 40px;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 10px;
+    margin-bottom: 25px;
+    color: #1f2937;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border-bottom: 3px solid #10b981;
+    padding-bottom: 12px;
+    position: relative;
+}
+
+.travel-content h3:first-child {
+    margin-top: 0;
+}
+
+/* Lists */
+.travel-content ol,
+.travel-content ul {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 20px;
+}
+
+/* ===== CARD STYLING (Flights & Hotels) ===== */
+.travel-content li {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 18px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    line-height: 1.6;
+}
+
+.travel-content li:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+    border-color: #10b981;
+}
+
+/* Card Content Layout */
+.travel-content li strong {
+    color: #111827;
+    font-weight: 600;
+    display: block;
+    margin-top: 8px;
+}
+
+.travel-content li strong:first-of-type {
+    font-size: 1.2rem;
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #059669;
+}
+
+/* Separators within cards */
+.travel-content li br {
+    display: block;
+    content: '';
+    height: 0;
+}
+
+.travel-content li strong:first-of-type + br + strong {
+    margin-top: 12px;
+}
+
+/* Text after <br> */
+.travel-content li br + br {
+    margin: 8px 0;
+}
+
+/* Price & Rating Highlights */
+.travel-content li strong {
+    font-weight: 600;
+}
+
+/* Highlight price in green */
+.travel-content li:has(strong:contains("Price:")) {
+    --price-color: #10b981;
+}
+
+.travel-content li strong:contains("$") {
+    color: #10b981;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+/* Rating highlight */
+.travel-content li strong:contains("/5") {
+    color: #d97706;
+    font-weight: 700;
+}
+
+/* ===== IMAGES ===== */
+
+/* All images in cards */
+.travel-content img {
+    max-width: 100%;
+    height: auto;
+    margin: 14px 0;
+    border-radius: 8px;
+    display: block;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.travel-content img:hover {
+    transform: scale(1.02);
+}
+
+/* Hotel images - larger */
+.travel-content h3:contains("Hotels") + ol li img,
+.travel-content h3:contains("Hotel") + ol li img,
+.travel-content h3:contains("Accommodations") + ol li img {
+    max-height: 220px;
+    object-fit: cover;
+    width: 100%;
+}
+
+/* Airline logos - smaller */
+.travel-content h3:contains("Flights") + ol li img,
+.travel-content h3:contains("Flight") + ol li img {
+    max-width: 80px;
+    max-height: 60px;
+    margin: 10px 0;
+}
+
+/* ===== LINKS ===== */
+
+.travel-content a {
+    color: #10b981;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-block;
+    padding: 6px 0;
+    border-bottom: 2px solid transparent;
+}
+
+.travel-content a:hover {
+    color: #059669;
+    border-bottom-color: #10b981;
+}
+
+/* ===== TEXT FORMATTING ===== */
+
+.travel-content em,
+.travel-content i {
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Descriptions */
+.travel-content li:has(strong:contains("Description:")) strong:not(:first-of-type):contains(":") + br + em {
+    display: block;
+    margin-top: 8px;
+}
+
+/* ===== ANNOTATIONS ===== */
+
+/* Duration annotation (flights) */
+.travel-content li strong:contains("Duration") {
+    color: #6366f1;
+}
+
+/* Rating annotation (hotels) */
+.travel-content li strong:contains("Rating") {
+    color: #d97706;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .container {
+        padding: 25px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    .result h2 {
+        font-size: 1.5rem;
+    }
+
+    .travel-content h3 {
+        font-size: 1.2rem;
+        margin-top: 30px;
+    }
+
+    textarea {
+        height: 100px;
+        font-size: 16px;
+    }
+
+    .travel-content li {
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+
+    .travel-content img {
+        max-height: 180px;
+    }
+
+    button {
+        padding: 12px;
+        font-size: 16px;
+    }
 }
