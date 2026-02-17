@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Travel Agent</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>✈️ AI Travel Agent</h1>
+    <p class="subtitle">Find Flights & Hotels Instantly</p>
+
+    <form action="/search" method="POST">
+        <textarea 
+            name="query" 
+            placeholder="Example: I want to travel from NYC to Paris from March 10-17 with 2 adults..."
+            required
+        ></textarea>
+
+        <button type="submit">Search Travel Options</button>
+    </form>
+
+    <% if (response) { %>
+        <div class="result">
+            <h2>Travel Information</h2>
+            <div><%- response %></div>
+        </div>
+    <% } %>
+</div>
+
+</body>
+</html>
