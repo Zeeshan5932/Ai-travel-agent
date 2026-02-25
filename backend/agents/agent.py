@@ -1,10 +1,10 @@
 # pylint: disable = http-used,print-used,no-self-use
+# pylint: disable = http-used,print-used,no-self-use
 import os
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
 import datetime
 import operator
-import os
 from typing import Annotated, TypedDict
 
 from dotenv import load_dotenv
@@ -15,8 +15,14 @@ from langgraph.graph import END, StateGraph
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+# EXISTING TOOLS
 from agents.tools.flights_finder import flights_finder
 from agents.tools.hotels_finder import hotels_finder
+
+# 🆕 NEW TOOLS (you must create these files)
+from agents.tools.weather_finder import weather_finder
+from agents.tools.visa_checker import visa_checker
+from agents.tools.cars_finder import cars_finder
 
 _ = load_dotenv()
 
@@ -27,40 +33,95 @@ class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
 
 
-TOOLS_SYSTEM_PROMPT = f"""You are a smart travel agency assistant. Use the tools to find flights and hotels.
-You are allowed to make multiple calls together or in sequence.
-The current year is {CURRENT_YEAR}.
+# 🔥 UPDATED SYSTEM PROMPT (Multi-Feature Intelligent Agent)
 
-IMPORTANT OUTPUT FORMATTING RULES:
-1. Use clear section headers with ### for Flights and Hotels
-2. For each flight/hotel, use a clean numbered list format
-3. Format each item with:
-   - **Airline/Hotel Name** - Bold, on first line
-   - Each detail on a new line with proper labels
-   - Always include: Price, Duration/Rating, Link to booking
-   - Add airline logo or hotel image URL
+TOOLS_SYSTEM_PROMPT = f"""
+You are an advanced AI Travel Assistant (Year: {CURRENT_YEAR}).
 
-4. PRICING FORMAT (consistent across all items):
-   - Flights: **Price:** $XXX (Economy/Business class)
-   - Hotels: **Rate:** $XYZ per night | **Total:** $XYZZ (for stay duration)
+You can:
+- Find flights
+- Find hotels
+- Suggest rental cars
+- Show weather forecast
+- Check visa requirements
+- Analyze travel budget
+- Recommend destinations
+- Generate itinerary
 
-5. Keep descriptions concise (1-2 sentences max)
-6. Add booking links using proper markdown: [Book on Google Flights](url)
-7. Add images/logos using markdown: ![Alt text](image_url)
-8. Do NOT use excessive asterisks or formatting
-9. Use clean, readable spacing between items
+You are allowed to call multiple tools together or sequentially.
 
-Example structure:
-### Flights from Madrid to Amsterdam
-1. **Air Europa**
-   - **Flight Number:** UX 1091
-   - **Departure:** MAD at 07:05 → **Arrival:** AMS at 09:40
-   - **Duration:** 2h 35min | **Aircraft:** Boeing 787
-   - **Price:** $198 (Economy)
-   - ![Air Europa](logo_url)
-   - [Book on Google Flights](url)"""
+----------------------------------------------------
+FORMAT RULES (STRICTLY FOLLOW)
+----------------------------------------------------
 
-TOOLS = [flights_finder, hotels_finder]
+1. Use section headers with ###:
+   - ### Flights
+   - ### Hotels
+   - ### Rental Cars
+   - ### Weather
+   - ### Visa Information
+   - ### Budget Analysis
+   - ### Itinerary
+
+2. Clean numbered list format.
+
+3. Flights Format:
+   - **Airline Name**
+   - **Departure:** XXX → **Arrival:** XXX
+   - **Duration:** XXX
+   - **Price:** $XXX (Economy/Business)
+   - ![Airline](logo_url)
+   - [Book on Google Flights](url)
+
+4. Hotels Format:
+   - **Hotel Name**
+   - **Location:** XXX
+   - **Rating:** X.X/5
+   - **Rate:** $XXX per night | **Total:** $XXXX
+   - ![Hotel](image_url)
+   - [Visit Website](url)
+
+5. Rental Cars:
+   - **Company**
+   - **Price per day**
+   - Booking link
+
+6. Weather:
+   - City
+   - Temperature (°C)
+   - Description
+
+7. Visa:
+   - Clear yes/no
+   - Brief explanation
+
+8. Budget Analysis:
+   - Total flight cost
+   - Total hotel cost
+   - Compare with user budget
+   - Show remaining or exceeded amount
+
+9. Itinerary:
+   - Day-by-day breakdown
+   - Max 3 activities per day
+
+10. Keep clean spacing.
+11. No excessive markdown.
+12. Keep concise.
+
+If user does not specify something (budget, weather, visa),
+only call relevant tools.
+"""
+
+
+# 🔥 REGISTER ALL TOOLS
+TOOLS = [
+    flights_finder,
+    hotels_finder,
+    weather_finder,
+    visa_checker,
+    cars_finder
+]
 
 EMAILS_SYSTEM_PROMPT = """Your task is to convert structured markdown-like text into a valid HTML email body.
 
@@ -148,16 +209,31 @@ class Agent:
         self._tools_llm = ChatOpenAI(model='gpt-4o').bind_tools(TOOLS)
 
         builder = StateGraph(AgentState)
+
         builder.add_node('call_tools_llm', self.call_tools_llm)
         builder.add_node('invoke_tools', self.invoke_tools)
         builder.add_node('email_sender', self.email_sender)
+
         builder.set_entry_point('call_tools_llm')
 
-        builder.add_conditional_edges('call_tools_llm', Agent.exists_action, {'more_tools': 'invoke_tools', 'email_sender': 'email_sender'})
+        builder.add_conditional_edges(
+            'call_tools_llm',
+            Agent.exists_action,
+            {
+                'more_tools': 'invoke_tools',
+                'email_sender': 'email_sender'
+            }
+        )
+
         builder.add_edge('invoke_tools', 'call_tools_llm')
         builder.add_edge('email_sender', END)
+
         memory = MemorySaver()
-        self.graph = builder.compile(checkpointer=memory, interrupt_before=['email_sender'])
+
+        self.graph = builder.compile(
+            checkpointer=memory,
+            interrupt_before=['email_sender']
+        )
 
         print(self.graph.get_graph().draw_mermaid())
 
@@ -168,40 +244,60 @@ class Agent:
             return 'email_sender'
         return 'more_tools'
 
+    # ✅ EMAIL SYSTEM (UNCHANGED LOGIC)
     def email_sender(self, state: AgentState):
         print('Sending email')
-        email_llm = ChatOpenAI(model='gpt-4o', temperature=0.1)  # Instantiate another LLM
-        email_message = [SystemMessage(content=EMAILS_SYSTEM_PROMPT), HumanMessage(content=state['messages'][-1].content)]
-        email_response = email_llm.invoke(email_message)
-        print('Email content:', email_response.content)
 
-        message = Mail(from_email=os.environ['FROM_EMAIL'], to_emails=os.environ['TO_EMAIL'], subject=os.environ['EMAIL_SUBJECT'],
-                       html_content=email_response.content)
+        email_llm = ChatOpenAI(model='gpt-4o', temperature=0.1)
+
+        email_message = [
+            SystemMessage(content=EMAILS_SYSTEM_PROMPT),
+            HumanMessage(content=state['messages'][-1].content)
+        ]
+
+        email_response = email_llm.invoke(email_message)
+
+        message = Mail(
+            from_email=os.environ['FROM_EMAIL'],
+            to_emails=os.environ['TO_EMAIL'],
+            subject=os.environ['EMAIL_SUBJECT'],
+            html_content=email_response.content
+        )
+
         try:
             sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
             response = sg.send(message)
             print(response.status_code)
-            print(response.body)
-            print(response.headers)
         except Exception as e:
             print(str(e))
 
+    # ✅ TOOL CALLING (UNCHANGED)
     def call_tools_llm(self, state: AgentState):
         messages = state['messages']
         messages = [SystemMessage(content=TOOLS_SYSTEM_PROMPT)] + messages
         message = self._tools_llm.invoke(messages)
         return {'messages': [message]}
 
+    # ✅ TOOL INVOCATION (UNCHANGED)
     def invoke_tools(self, state: AgentState):
         tool_calls = state['messages'][-1].tool_calls
         results = []
+
         for t in tool_calls:
             print(f'Calling: {t}')
-            if not t['name'] in self._tools:  # check for bad tool name from LLM
-                print('\n ....bad tool name....')
-                result = 'bad tool name, retry'  # instruct LLM to retry if bad
+
+            if t['name'] not in self._tools:
+                result = 'Invalid tool name, retry'
             else:
                 result = self._tools[t['name']].invoke(t['args'])
-            results.append(ToolMessage(tool_call_id=t['id'], name=t['name'], content=str(result)))
-        print('Back to the model!')
+
+            results.append(
+                ToolMessage(
+                    tool_call_id=t['id'],
+                    name=t['name'],
+                    content=str(result)
+                )
+            )
+
+        print('Back to model...')
         return {'messages': results}

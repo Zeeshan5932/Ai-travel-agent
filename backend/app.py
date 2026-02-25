@@ -151,6 +151,11 @@ from pydantic import BaseModel
 from langchain_core.messages import HumanMessage
 from agents.agent import Agent
 
+# NEW IMPORTS
+from services.itinerary_generator import generate_itinerary
+from services.budget_planner import analyze_budget
+from database.db import SessionLocal, TravelHistory
+
 app = FastAPI()
 agent = Agent()
 
@@ -168,6 +173,22 @@ class EmailRequest(BaseModel):
     receiver_email: str
     subject: str
     thread_id: str
+
+
+class ItineraryRequest(BaseModel):
+    destination: str
+    days: int
+
+
+class BudgetRequest(BaseModel):
+    flight_cost: float
+    hotel_cost: float
+    budget: float
+
+
+class PriceAlertRequest(BaseModel):
+    route: str
+    target_price: float
 
 
 # -----------------------------
@@ -197,6 +218,12 @@ def process_query(request: TravelRequest):
 
         result = agent.graph.invoke({"messages": messages}, config=config)
 
+        # Save travel history
+        db = SessionLocal()
+        db.add(TravelHistory(query=request.query))
+        db.commit()
+        db.close()
+
         return {
             "thread_id": thread_id,
             "travel_info": result["messages"][-1].content
@@ -221,5 +248,62 @@ def send_email(request: EmailRequest):
 
         return {"message": "Email sent successfully"}
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/generate-itinerary")
+def itinerary(request: ItineraryRequest):
+    """
+    Generate AI itinerary
+    """
+    try:
+        result = generate_itinerary(request.destination, request.days)
+        return {"itinerary": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/budget-analysis")
+def budget(request: BudgetRequest):
+    """
+    Analyze trip budget
+    """
+    try:
+        result = analyze_budget(
+            request.flight_cost,
+            request.hotel_cost,
+            request.budget
+        )
+        return {"budget_analysis": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/set-price-alert")
+def price_alert(request: PriceAlertRequest):
+    """
+    Dummy price alert endpoint
+    (You can later connect this to background cron job)
+    """
+    try:
+        return {
+            "message": f"Price alert set for {request.route} at ${request.target_price}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/travel-history")
+def travel_history():
+    """
+    Get stored travel queries
+    """
+    try:
+        db = SessionLocal()
+        records = db.query(TravelHistory).all()
+        db.close()
+
+        return {"history": [r.query for r in records]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
