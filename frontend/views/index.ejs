@@ -2,34 +2,138 @@
 <html>
 <head>
     <title>AI Travel Agent</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <div class="container">
-    <h1>✈️ AI Travel Agent</h1>
-    <p class="subtitle">Find Flights & Hotels Instantly</p>
+    <header class="header">
+        <h1>AI Travel Agent</h1>
+        <p class="subtitle">Smart trip planning — Flights, Hotels, Cars, Weather & Visa</p>
+    </header>
 
-    <form action="/search" method="POST">
-        <textarea 
-            name="query" 
-            placeholder="Example: I want to travel from NYC to Paris from March 10-17 with 2 adults..."
-            required
-        ></textarea>
+    <section class="search-panel">
+        <form id="searchForm" action="/search" method="POST">
+            <textarea 
+                id="queryInput"
+                name="query" 
+                placeholder="Example: Plan my 5-day Paris trip under $3000 with weather and visa info"
+                required
+            ></textarea>
 
-        <button type="submit">Search Travel Options</button>
-    </form>
+            <div class="controls">
+                <button id="searchBtn" type="submit" class="btn-primary">Plan Trip</button>
+                <button id="resetBtn" type="button" class="btn-ghost">Plan Another Trip</button>
+            </div>
+        </form>
+    </section>
 
-    <% if (response) { %>
-        <div class="result">
-            <h2>✈️ Your Travel Plan</h2>
-            <div class="travel-content">
-                <%- response %>
+    <section id="resultArea" class="result" aria-live="polite">
+        <div id="alert" class="alert hidden"></div>
+        <div id="spinner" class="spinner hidden" aria-hidden="true"></div>
+        <div id="resultsWrapper" class="results-wrapper hidden">
+            <h2>Your Travel Plan</h2>
+            <div class="travel-content" id="travelContent">
+                <% if (response) { %>
+                    <%- response %>
+                <% } %>
             </div>
         </div>
+    </section>
 
-    <% } %>
 </div>
 
+<script>
+// Client-side behavior: use fetch to call /api/search, show spinner, errors, and animate results
+const form = document.getElementById('searchForm');
+const spinner = document.getElementById('spinner');
+const alertBox = document.getElementById('alert');
+const resultsWrapper = document.getElementById('resultsWrapper');
+const travelContent = document.getElementById('travelContent');
+const resetBtn = document.getElementById('resetBtn');
+const queryInput = document.getElementById('queryInput');
+
+function showSpinner() { spinner.classList.remove('hidden'); resultsWrapper.classList.add('hidden'); alertBox.classList.add('hidden'); }
+function hideSpinner() { spinner.classList.add('hidden'); }
+function showError(msg){ alertBox.textContent = msg; alertBox.classList.remove('hidden'); alertBox.classList.add('shake'); setTimeout(()=>alertBox.classList.remove('shake'),700); }
+function transformToCards(html){
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const sections = ['Flights','Hotels','Rental Cars','Weather','Visa','Budget Analysis','Itinerary'];
+    const cards = document.createElement('div');
+    cards.className = 'cards scroll-area';
+    let foundAny = false;
+
+    // find headings and group their following siblings into cards
+    const headings = Array.from(tmp.querySelectorAll('h1,h2,h3,h4,h5,h6'));
+    headings.forEach((h)=>{
+        const text = h.textContent.trim();
+        for(const s of sections){
+            if(text.toLowerCase().includes(s.toLowerCase())){
+                foundAny = true;
+                const card = document.createElement('div'); card.className='card';
+                const title = document.createElement('h4'); title.textContent = text; card.appendChild(title);
+                // collect nodes after heading until next heading
+                let node = h.nextSibling;
+                while(node){
+                    if(node.nodeType===1 && /^H[1-6]$/.test(node.tagName)) break;
+                    card.appendChild(node.cloneNode(true));
+                    node = node.nextSibling;
+                }
+                cards.appendChild(card);
+                break;
+            }
+        }
+    });
+
+    if(foundAny){
+        return cards.outerHTML;
+    }
+    return html;
+}
+
+function showResults(html){
+    const transformed = transformToCards(html);
+    travelContent.innerHTML = transformed;
+    resultsWrapper.classList.remove('hidden');
+    resultsWrapper.classList.add('fade-in-up');
+    setTimeout(()=>resultsWrapper.classList.remove('fade-in-up'),700);
+}
+
+form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const q = queryInput.value.trim();
+    if(!q) return;
+    showSpinner();
+    try{
+        const resp = await fetch('/api/search', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({query:q}) });
+        if(!resp.ok){
+            const j = await resp.json().catch(()=>null);
+            throw new Error((j && j.error) ? j.error : 'Server error');
+        }
+        const j = await resp.json();
+        hideSpinner();
+        if(j.success){
+            showResults(j.html);
+            window.scrollTo({top: resultsWrapper.offsetTop - 20, behavior:'smooth'});
+        } else {
+            showError(j.error || 'Unknown error');
+        }
+    }catch(err){
+        hideSpinner();
+        showError(err.message || 'Request failed');
+    }
+});
+
+resetBtn.addEventListener('click', ()=>{
+    queryInput.value = '';
+    travelContent.innerHTML = '';
+    resultsWrapper.classList.add('hidden');
+    alertBox.classList.add('hidden');
+    queryInput.focus();
+});
+</script>
 </body>
 </html>
