@@ -6,7 +6,7 @@ os.environ["LANGCHAIN_TRACING_V2"] = "false"
 import datetime
 import operator
 from typing import Annotated, TypedDict
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
 from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_groq import ChatGroq
@@ -15,9 +15,23 @@ from langgraph.graph import END, StateGraph
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
-# Load .env
-load_dotenv()
+# Load .env (search upward for a .env file)
+env_path = find_dotenv()
+if env_path:
+    load_dotenv(env_path)
+else:
+    # fallback: try common locations relative to this file
+    fallback_paths = [
+        os.path.join(os.path.dirname(__file__), '..', '.env'),
+        os.path.join(os.path.dirname(__file__), '..', '..', '.env'),
+    ]
+    for p in fallback_paths:
+        if os.path.exists(p):
+            env_path = p
+            load_dotenv(p)
+            break
 
+print("Loaded .env path:", env_path or "None")
 # EXISTING TOOLS
 from agents.tools.flights_finder import flights_finder
 from agents.tools.hotels_finder import hotels_finder
@@ -27,7 +41,7 @@ from agents.tools.cars_finder import cars_finder
 
 CURRENT_YEAR = datetime.datetime.now().year
 
-
+print("Loaded GROQ KEY:", os.getenv("GROQ_API_KEY"))
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
 
@@ -208,9 +222,17 @@ class Agent:
         self._tools = {t.name: t for t in TOOLS}
 
         # ✅ GROQ LLM ONLY
+        groq_key = os.getenv("GROQ_API_KEY")
+        print("Loaded GROQ KEY:", groq_key)
+        if not groq_key:
+            raise RuntimeError(
+                "GROQ_API_KEY not found. Ensure you have a .env with GROQ_API_KEY or export the variable."
+                f" Searched .env path: {env_path or 'None'}"
+            )
+
         self._tools_llm = ChatGroq(
             model=os.getenv("GROQ_MODEL", "llama3-70b-8192"),
-            groq_api_key=os.getenv("GROQ_API_KEY"),
+            groq_api_key=groq_key,
             temperature=0.2
         ).bind_tools(TOOLS)
 
