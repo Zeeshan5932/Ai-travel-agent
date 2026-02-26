@@ -6,7 +6,7 @@ os.environ["LANGCHAIN_TRACING_V2"] = "false"
 import datetime
 import operator
 from typing import Annotated, TypedDict
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 
 from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_groq import ChatGroq
@@ -15,23 +15,9 @@ from langgraph.graph import END, StateGraph
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
-# Load .env (search upward for a .env file)
-env_path = find_dotenv()
-if env_path:
-    load_dotenv(env_path)
-else:
-    # fallback: try common locations relative to this file
-    fallback_paths = [
-        os.path.join(os.path.dirname(__file__), '..', '.env'),
-        os.path.join(os.path.dirname(__file__), '..', '..', '.env'),
-    ]
-    for p in fallback_paths:
-        if os.path.exists(p):
-            env_path = p
-            load_dotenv(p)
-            break
+# Load .env
+load_dotenv()
 
-print("Loaded .env path:", env_path or "None")
 # EXISTING TOOLS
 from agents.tools.flights_finder import flights_finder
 from agents.tools.hotels_finder import hotels_finder
@@ -222,17 +208,9 @@ class Agent:
         self._tools = {t.name: t for t in TOOLS}
 
         # ✅ GROQ LLM ONLY
-        groq_key = os.getenv("GROQ_API_KEY")
-        print("Loaded GROQ KEY:", groq_key)
-        if not groq_key:
-            raise RuntimeError(
-                "GROQ_API_KEY not found. Ensure you have a .env with GROQ_API_KEY or export the variable."
-                f" Searched .env path: {env_path or 'None'}"
-            )
-
         self._tools_llm = ChatGroq(
-            model=os.getenv("GROQ_MODEL", "llama3-70b-8192"),
-            groq_api_key=groq_key,
+            model=os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
+            groq_api_key=os.getenv("GROQ_API_KEY"),
             temperature=0.2
         ).bind_tools(TOOLS)
 
@@ -265,6 +243,34 @@ class Agent:
 
         print(self.graph.get_graph().draw_mermaid())
 
+        # store API key and model preference list
+        self._groq_api_key = os.getenv("GROQ_API_KEY")
+        # GROQ_MODEL_LIST can be a comma-separated list of preferred models
+        self._groq_model_list = [m.strip() for m in os.getenv("GROQ_MODEL_LIST", "llama-3.1-405b-reasoning,llama-3.1-70b-versatile").split(",") if m.strip()]
+
+    def _get_model_candidates(self):
+        explicit = os.getenv("GROQ_MODEL")
+        if explicit:
+            return [explicit] + [m for m in self._groq_model_list if m != explicit]
+        return list(self._groq_model_list)
+
+    def _invoke_with_fallback(self, messages, temperature=0.2, bind_tools=False):
+        last_exc = None
+        for model in self._get_model_candidates():
+            try:
+                llm = ChatGroq(model=model, groq_api_key=self._groq_api_key, temperature=temperature)
+                if bind_tools:
+                    llm = llm.bind_tools(TOOLS)
+                return llm.invoke(messages)
+            except Exception as e:
+                last_exc = e
+                msg = str(e)
+                if "model_decommissioned" in msg or "decommissioned" in msg:
+                    print(f"Model {model} decommissioned, trying next model...")
+                    continue
+                raise
+        raise last_exc
+
     @staticmethod
     def exists_action(state: AgentState):
         result = state["messages"][-1]
@@ -274,19 +280,12 @@ class Agent:
 
     def email_sender(self, state: AgentState):
         print("Sending email...")
-
-        email_llm = ChatGroq(
-            model=os.getenv("GROQ_MODEL", "llama3-70b-8192"),
-            groq_api_key=os.getenv("GROQ_API_KEY"),
-            temperature=0.1,
-        )
-
         email_message = [
             SystemMessage(content=EMAILS_SYSTEM_PROMPT),
             HumanMessage(content=state["messages"][-1].content),
         ]
 
-        email_response = email_llm.invoke(email_message)
+        email_response = self._invoke_with_fallback(email_message, temperature=0.1, bind_tools=False)
 
         message = Mail(
             from_email=os.environ["FROM_EMAIL"],
@@ -305,7 +304,7 @@ class Agent:
     def call_tools_llm(self, state: AgentState):
         messages = state["messages"]
         messages = [SystemMessage(content=TOOLS_SYSTEM_PROMPT)] + messages
-        message = self._tools_llm.invoke(messages)
+        message = self._invoke_with_fallback(messages, temperature=0.2, bind_tools=True)
         return {"messages": [message]}
 
     def invoke_tools(self, state: AgentState):
