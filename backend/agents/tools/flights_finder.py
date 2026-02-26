@@ -50,7 +50,8 @@ def flights_finder(params: FlightsInput):
 
     try:
         search = serpapi.search(params)
-        results = search.data['best_flights']
+        # results = search.data['best_flights']
+        results = search.data.get('best_flights', [])
     except Exception as e:
         results = str(e)
     return results

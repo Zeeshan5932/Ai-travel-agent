@@ -4,7 +4,7 @@ from langchain_core.tools import tool
 
 
 @tool
-def get_weather(city: str):
+def weather_finder(city: str):
     """
     Get the current weather for a given city using wttr.in API.
     """
@@ -14,7 +14,7 @@ def get_weather(city: str):
     response = requests.get(url).json()
     
     
-    return{
+    return {
         "city": city,
         "temperature": response["main"]["temp"],
         "description": response["weather"][0]["description"]

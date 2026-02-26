@@ -155,6 +155,22 @@ from agents.agent import Agent
 from services.itinerary_generator import generate_itinerary
 from services.budget_planner import analyze_budget
 from database.db import SessionLocal, TravelHistory
+from dotenv import load_dotenv
+load_dotenv()
+# Validate required API keys early so failures are clear
+required_keys = [
+    # Either OpenAI or Groq key is required for the conversational agent
+    # we only enforce that at least one is present below
+    "SERPAPI_API_KEY",     # used by various search tools
+    # Other keys (WEATHER_API_KEY, SENDGRID_API_KEY) are optional and checked on demand
+]
+
+# make sure we have a model key
+if not (os.getenv('OPENAI_API_KEY') or os.getenv('GROQ_API_KEY')):
+    raise RuntimeError("Missing required environment variable: OPENAI_API_KEY or GROQ_API_KEY")
+for key in required_keys:
+    if not os.getenv(key):
+        raise RuntimeError(f"Missing required environment variable: {key}")
 
 app = FastAPI()
 agent = Agent()
@@ -206,31 +222,35 @@ def populate_envs(sender_email, receiver_email, subject):
 # -----------------------------
 
 @app.post("/travel")
-def process_query(request: TravelRequest):
-    """
-    Process travel query and return flight + hotel information
-    """
+def travel(request: TravelRequest):
     try:
+        print("Received request:", request.query)
+
         thread_id = str(uuid.uuid4())
 
         messages = [HumanMessage(content=request.query)]
         config = {"configurable": {"thread_id": thread_id}}
 
-        result = agent.graph.invoke({"messages": messages}, config=config)
+        result = agent.graph.invoke(
+            {"messages": messages},
+            config=config
+        )
 
-        # Save travel history
-        db = SessionLocal()
-        db.add(TravelHistory(query=request.query))
-        db.commit()
-        db.close()
+        print("Agent result:", result)
 
         return {
             "thread_id": thread_id,
-            "travel_info": result["messages"][-1].content
+            "response": result["messages"][-1].content
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print("❌ ERROR INSIDE /travel:")
+        print(str(e))
+        detail = str(e)
+        if "invalid_api_key" in detail or "Incorrect API key" in detail:
+            # OpenAI auth problems are common; return 401 so client knows
+            raise HTTPException(status_code=401, detail="OpenAI API key missing or invalid. " + detail)
+        raise HTTPException(status_code=500, detail=detail)
 
 
 @app.post("/send-email")

@@ -1,30 +1,29 @@
-# pylint: disable = http-used,print-used,no-self-use
-# pylint: disable = http-used,print-used,no-self-use
+#pylint: disable = http-used,print-used,no-self-use
+# pylint: disable=http-used,print-used,no-self-use
 import os
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
 import datetime
 import operator
 from typing import Annotated, TypedDict
-
 from dotenv import load_dotenv
+
 from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage, ToolMessage
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+# Load .env
+load_dotenv()
+
 # EXISTING TOOLS
 from agents.tools.flights_finder import flights_finder
 from agents.tools.hotels_finder import hotels_finder
-
-# 🆕 NEW TOOLS (you must create these files)
 from agents.tools.weather_finder import weather_finder
 from agents.tools.visa_checker import visa_checker
 from agents.tools.cars_finder import cars_finder
-
-_ = load_dotenv()
 
 CURRENT_YEAR = datetime.datetime.now().year
 
@@ -205,99 +204,107 @@ Expected Output:
 class Agent:
 
     def __init__(self):
+
         self._tools = {t.name: t for t in TOOLS}
-        self._tools_llm = ChatOpenAI(model='gpt-4o').bind_tools(TOOLS)
+
+        # ✅ GROQ LLM ONLY
+        self._tools_llm = ChatGroq(
+            model=os.getenv("GROQ_MODEL", "llama3-70b-8192"),
+            groq_api_key=os.getenv("GROQ_API_KEY"),
+            temperature=0.2
+        ).bind_tools(TOOLS)
 
         builder = StateGraph(AgentState)
 
-        builder.add_node('call_tools_llm', self.call_tools_llm)
-        builder.add_node('invoke_tools', self.invoke_tools)
-        builder.add_node('email_sender', self.email_sender)
+        builder.add_node("call_tools_llm", self.call_tools_llm)
+        builder.add_node("invoke_tools", self.invoke_tools)
+        builder.add_node("email_sender", self.email_sender)
 
-        builder.set_entry_point('call_tools_llm')
+        builder.set_entry_point("call_tools_llm")
 
         builder.add_conditional_edges(
-            'call_tools_llm',
+            "call_tools_llm",
             Agent.exists_action,
             {
-                'more_tools': 'invoke_tools',
-                'email_sender': 'email_sender'
-            }
+                "more_tools": "invoke_tools",
+                "email_sender": "email_sender",
+            },
         )
 
-        builder.add_edge('invoke_tools', 'call_tools_llm')
-        builder.add_edge('email_sender', END)
+        builder.add_edge("invoke_tools", "call_tools_llm")
+        builder.add_edge("email_sender", END)
 
         memory = MemorySaver()
 
         self.graph = builder.compile(
             checkpointer=memory,
-            interrupt_before=['email_sender']
+            interrupt_before=["email_sender"],
         )
 
         print(self.graph.get_graph().draw_mermaid())
 
     @staticmethod
     def exists_action(state: AgentState):
-        result = state['messages'][-1]
+        result = state["messages"][-1]
         if len(result.tool_calls) == 0:
-            return 'email_sender'
-        return 'more_tools'
+            return "email_sender"
+        return "more_tools"
 
-    # ✅ EMAIL SYSTEM (UNCHANGED LOGIC)
     def email_sender(self, state: AgentState):
-        print('Sending email')
+        print("Sending email...")
 
-        email_llm = ChatOpenAI(model='gpt-4o', temperature=0.1)
+        email_llm = ChatGroq(
+            model=os.getenv("GROQ_MODEL", "llama3-70b-8192"),
+            groq_api_key=os.getenv("GROQ_API_KEY"),
+            temperature=0.1,
+        )
 
         email_message = [
             SystemMessage(content=EMAILS_SYSTEM_PROMPT),
-            HumanMessage(content=state['messages'][-1].content)
+            HumanMessage(content=state["messages"][-1].content),
         ]
 
         email_response = email_llm.invoke(email_message)
 
         message = Mail(
-            from_email=os.environ['FROM_EMAIL'],
-            to_emails=os.environ['TO_EMAIL'],
-            subject=os.environ['EMAIL_SUBJECT'],
-            html_content=email_response.content
+            from_email=os.environ["FROM_EMAIL"],
+            to_emails=os.environ["TO_EMAIL"],
+            subject=os.environ["EMAIL_SUBJECT"],
+            html_content=email_response.content,
         )
 
         try:
-            sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+            sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
             response = sg.send(message)
             print(response.status_code)
         except Exception as e:
-            print(str(e))
+            print("Email Error:", str(e))
 
-    # ✅ TOOL CALLING (UNCHANGED)
     def call_tools_llm(self, state: AgentState):
-        messages = state['messages']
+        messages = state["messages"]
         messages = [SystemMessage(content=TOOLS_SYSTEM_PROMPT)] + messages
         message = self._tools_llm.invoke(messages)
-        return {'messages': [message]}
+        return {"messages": [message]}
 
-    # ✅ TOOL INVOCATION (UNCHANGED)
     def invoke_tools(self, state: AgentState):
-        tool_calls = state['messages'][-1].tool_calls
+        tool_calls = state["messages"][-1].tool_calls
         results = []
 
         for t in tool_calls:
-            print(f'Calling: {t}')
+            print(f"Calling tool: {t}")
 
-            if t['name'] not in self._tools:
-                result = 'Invalid tool name, retry'
+            if t["name"] not in self._tools:
+                result = "Invalid tool name"
             else:
-                result = self._tools[t['name']].invoke(t['args'])
+                result = self._tools[t["name"]].invoke(t["args"])
 
             results.append(
                 ToolMessage(
-                    tool_call_id=t['id'],
-                    name=t['name'],
-                    content=str(result)
+                    tool_call_id=t["id"],
+                    name=t["name"],
+                    content=str(result),
                 )
             )
 
-        print('Back to model...')
-        return {'messages': results}
+        print("Returning tool results to model...")
+        return {"messages": results}

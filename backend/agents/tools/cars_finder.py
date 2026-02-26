@@ -4,6 +4,11 @@ from langchain_core.tools import tool
 
 @tool
 def cars_finder(location: str, pickup_date: str, dropoff_date: str):
+    """
+    Search for rental cars in a given location between pickup and dropoff dates.
+
+    Returns a list of the top 3 organic search results from Google.
+    """
     params = {
         "engine": "google",
         "q": f"car rental in {location}",
