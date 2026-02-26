@@ -236,11 +236,11 @@ def travel(request: TravelRequest):
             config=config
         )
 
-        print("Agent result:", result)
-
+        # print("Agent result:", result)
+        final_message = result["messages"][-1].content.strip()
         return {
             "thread_id": thread_id,
-            "response": result["messages"][-1].content
+            "response": final_message
         }
 
     except Exception as e:

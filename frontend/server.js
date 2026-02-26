@@ -32,6 +32,21 @@ app.post("/search", async (req, res) => {
   }
 });
 
+// JSON API used by the frontend JS (returns HTML fragment)
+app.post("/api/search", async (req, res) => {
+  const query = req.body.query || req.query.query;
+  try {
+    const apiResponse = await axios.post("http://localhost:8000/travel", {
+      query: query,
+    });
+    const html = marked.parse(apiResponse.data.response || "");
+    res.json({ success: true, html });
+  } catch (error) {
+    const msg = error?.response?.data || error.message || "Unknown error";
+    res.status(500).json({ success: false, error: String(msg) });
+  }
+});
+
 app.listen(3000, () => {
   console.log("Frontend running at http://localhost:3000");
 });

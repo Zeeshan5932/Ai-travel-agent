@@ -211,7 +211,8 @@ class Agent:
         self._tools_llm = ChatGroq(
             model=os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
             groq_api_key=os.getenv("GROQ_API_KEY"),
-            temperature=0.2
+            temperature=0.2,
+            max_tokens=4096,
         ).bind_tools(TOOLS)
 
         builder = StateGraph(AgentState)
