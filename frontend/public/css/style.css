@@ -28,13 +28,44 @@ h1{ text-align:left; font-size:2rem; color:#0f172a; margin-bottom:6px; font-weig
 
 /* Cards grid */
 .cards{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px }
-.card{ background:#fff; border-radius:12px; padding:16px; box-shadow:0 8px 24px rgba(14,30,60,0.06); border:1px solid #eef6ff; transition:transform .25s, box-shadow .25s }
-.card:hover{ transform:translateY(-6px); box-shadow:0 18px 40px rgba(14,30,60,0.09) }
+.card{ background:#fff; border-radius:16px; padding:20px; box-shadow:0 8px 24px rgba(14,30,60,0.06); border:1px solid #eef6ff; transition:transform .25s, box-shadow .25s }
+.card:hover{ transform:translateY(-8px); box-shadow:0 24px 48px rgba(14,30,60,0.12) }
 .card h4{ margin:0 0 10px 0; font-size:1rem; color:#0f172a }
 .card p{ color:#475569; font-size:0.95rem }
 .scroll-area{ max-height:420px; overflow:auto; padding-right:8px }
 
 .card img{ max-width:100%; border-radius:8px }
+
+/* Flight specific */
+.card.flight img{ width:80px; height:80px; border-radius:50%; object-fit:cover; float:left; margin-right:12px; box-shadow:0 6px 20px rgba(16,24,40,0.08) }
+.card.flight .price{ font-size:1.6rem; font-weight:800; color:#111827; display:block; margin-top:6px }
+.card.flight .btn-book{ display:inline-block; margin-top:10px; padding:10px 14px; background:linear-gradient(90deg,#6366f1,#0ea5e9); color:#fff; border-radius:10px; text-decoration:none; font-weight:700 }
+
+/* Hotel specific */
+.card.hotel img{ width:100%; height:180px; object-fit:cover; border-radius:10px; margin-bottom:10px }
+.card.hotel .rating{ color:#f59e0b; font-weight:700; margin-bottom:8px }
+.card.hotel .total-price{ color:#059669; font-weight:800; font-size:1.1rem }
+
+/* Budget */
+.budget-bar{ margin-top:12px }
+.budget-track{ background:#eef2ff; height:12px; border-radius:999px; overflow:hidden }
+.budget-fill{ height:100%; background:linear-gradient(90deg,#6366f1,#0ea5e9) }
+.budget-meta{ margin-top:8px; font-size:0.95rem; color:#475569 }
+.budget-meta .under{ color:#059669; font-weight:700 }
+.budget-meta .over{ color:#ef4444; font-weight:700 }
+
+/* Itinerary timeline */
+.timeline{ margin-top:12px; border-left:2px solid #eef2ff; padding-left:14px }
+.timeline-item{ display:flex; gap:12px; margin-bottom:14px }
+.timeline-item .dot{ width:12px; height:12px; border-radius:50%; background:linear-gradient(90deg,#6366f1,#0ea5e9); margin-top:6px }
+.timeline-item .day strong{ display:block; font-weight:700; margin-bottom:6px }
+.timeline-item .desc{ color:#475569 }
+
+/* Hero */
+.hero{ margin: -24px -24px 18px -24px; padding:48px 24px; border-radius:12px; background-image:linear-gradient(rgba(6,8,29,0.45), rgba(6,8,29,0.45)), url('https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=2c3b6a9c8b0bf1b6f6d22a3b6f8b4b9d'); background-size:cover; background-position:center; color:#fff }
+.hero-inner{ max-width:980px; margin:auto }
+.hero h2{ font-size:1.6rem; margin:0 0 6px 0; font-weight:800 }
+.hero .hero-sub{ opacity:0.95; color:rgba(255,255,255,0.9) }
 
 /* Links */
 .travel-content a{ color:#2563eb; text-decoration:none }
