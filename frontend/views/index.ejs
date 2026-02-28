@@ -4,9 +4,25 @@
     <title>AI Travel Agent</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
+
+<div class="animated-bg"></div>
+
+<nav class="navbar">
+    <div class="nav-inner">
+        <div class="brand">AI Travel<span class="dot">.</span></div>
+        <div class="nav-links">
+            <a href="#">Dashboard</a>
+            <a href="#">Trips</a>
+            <a href="#">Bookings</a>
+        </div>
+        <div class="nav-actions">
+            <button class="btn-ghost">Sign in</button>
+        </div>
+    </div>
+</nav>
 
 <div class="container">
     <header class="header">
@@ -65,41 +81,16 @@ const queryInput = document.getElementById('queryInput');
 function showSpinner() { spinner.classList.remove('hidden'); resultsWrapper.classList.add('hidden'); alertBox.classList.add('hidden'); }
 function hideSpinner() { spinner.classList.add('hidden'); }
 function showError(msg){ alertBox.textContent = msg; alertBox.classList.remove('hidden'); alertBox.classList.add('shake'); setTimeout(()=>alertBox.classList.remove('shake'),700); }
-function transformToCards(html){
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    const sections = ['Flights','Hotels','Rental Cars','Weather','Visa','Budget Analysis','Itinerary'];
-    const cards = document.createElement('div');
-    cards.className = 'cards scroll-area';
-    let foundAny = false;
 
-    // find headings and group their following siblings into cards
-    const headings = Array.from(tmp.querySelectorAll('h1,h2,h3,h4,h5,h6'));
-    headings.forEach((h)=>{
-        const text = h.textContent.trim();
-        for(const s of sections){
-            if(text.toLowerCase().includes(s.toLowerCase())){
-                foundAny = true;
-                const card = document.createElement('div'); card.className='card';
-                const title = document.createElement('h4'); title.textContent = text; card.appendChild(title);
-                // collect nodes after heading until next heading
-                let node = h.nextSibling;
-                while(node){
-                    if(node.nodeType===1 && /^H[1-6]$/.test(node.tagName)) break;
-                    card.appendChild(node.cloneNode(true));
-                    node = node.nextSibling;
-                }
-                cards.appendChild(card);
-                break;
-            }
-        }
-    });
-
-    if(foundAny){
-        return cards.outerHTML;
-    }
-    return html;
-}
+const ICONS = {
+    flight: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 12L22 2L14 22L11 13L2 12Z" fill="#6366f1"/></svg>',
+    hotel: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18v10H3V7z" fill="#0ea5e9"/><path d="M7 7v-2h2v2h6V5h2v2h2v2H5V7h2z" fill="#6366f1"/></svg>',
+    car: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 13h18v-2H3v2z" fill="#0ea5e9"/><path d="M5 11l1-3h12l1 3H5z" fill="#6366f1"/></svg>',
+    visa: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#6ee7b7"/><path d="M7 12h10v2H7z" fill="#065f46"/></svg>',
+    weather: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 14a4 4 0 1 1 0-8h1" stroke="#facc15" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    budget: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="6" width="18" height="12" rx="2" fill="#60a5fa"/></svg>',
+    itinerary: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 8h10" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/><path d="M7 12h10" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/><path d="M7 16h10" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/></svg>'
+};
 
 function transformToCards(html){
     const tmp = document.createElement('div');
@@ -109,14 +100,12 @@ function transformToCards(html){
     cards.className = 'cards scroll-area';
     let foundAny = false;
 
-    // find headings and group their following siblings into cards
     const headings = Array.from(tmp.querySelectorAll('h1,h2,h3,h4,h5,h6'));
     headings.forEach((h)=>{
         const text = h.textContent.trim();
         for(const s of sections){
             if(text.toLowerCase().includes(s.toLowerCase())){
                 foundAny = true;
-                // determine type from heading
                 let type = 'generic';
                 if(/flight/i.test(text)) type='flight';
                 if(/hotel/i.test(text)) type='hotel';
@@ -127,8 +116,13 @@ function transformToCards(html){
                 if(/itinerar/i.test(text) || /day\s*\d+/i.test(text)) type='itinerary';
 
                 const card = document.createElement('div'); card.className='card '+type;
-                const title = document.createElement('h4'); title.textContent = text; card.appendChild(title);
-                // collect nodes after heading until next heading
+
+                const header = document.createElement('div'); header.className='card-header';
+                const iconWrap = document.createElement('div'); iconWrap.className='card-icon'; iconWrap.innerHTML = ICONS[type] || ICONS['itinerary'];
+                const title = document.createElement('h4'); title.textContent = text;
+                header.appendChild(iconWrap); header.appendChild(title);
+                card.appendChild(header);
+
                 let node = h.nextSibling;
                 while(node){
                     if(node.nodeType===1 && /^H[1-6]$/.test(node.tagName)) break;
@@ -136,9 +130,24 @@ function transformToCards(html){
                     node = node.nextSibling;
                 }
 
-                // special decorations
+                // hotel rating parsing -> stars
+                if(type==='hotel'){
+                    const txt = card.innerText || '';
+                    const m = txt.match(/(\d+(?:\.\d+)?)\s*\/\s*5/);
+                    const rating = m? parseFloat(m[1]) : null;
+                    if(rating){
+                        const stars = document.createElement('div'); stars.className='stars';
+                        const full = Math.floor(rating);
+                        const half = (rating - full) >= 0.5 ? 1 : 0;
+                        for(let i=0;i<full;i++) stars.innerHTML += '<span class="star full">★</span>';
+                        if(half) stars.innerHTML += '<span class="star half">★</span>';
+                        for(let i=full+half;i<5;i++) stars.innerHTML += '<span class="star empty">☆</span>';
+                        header.appendChild(stars);
+                    }
+                }
+
+                // budget bar
                 if(type==='budget'){
-                    // try to parse budget numbers from card text (budget, spent)
                     const txt = card.innerText || '';
                     const nums = Array.from(txt.matchAll(/\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/g)).map(m=>m[1].replace(/,/g,''));
                     if(nums.length>=2){
@@ -152,38 +161,55 @@ function transformToCards(html){
                     }
                 }
 
-                if(type==='itinerary'){
-                    // build simple timeline: split by lines containing 'Day'
-                    const txt = card.innerText || '';
-                    const parts = txt.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-                    const days = parts.filter(p=>/^day\s*\d+/i.test(p));
-                    if(days.length>0){
-                        const timeline = document.createElement('div'); timeline.className='timeline';
-                        let nodeIter = h.nextSibling;
-                        while(nodeIter){
-                            if(nodeIter.nodeType===1 && /^H[1-6]$/.test(nodeIter.tagName)) break;
-                            if(nodeIter.nodeType===3 || nodeIter.nodeName==='P' || nodeIter.nodeName==='DIV' || nodeIter.nodeName==='OL' || nodeIter.nodeName==='UL'){
-                                const textBlock = nodeIter.textContent.trim();
-                                const matches = textBlock.match(/(Day\s*\d+[:\-]?\s*)([\s\S]*)/i);
-                                if(matches){
-                                    const day = matches[1]; const body = matches[2];
-                                    const dayEl = document.createElement('div'); dayEl.className='timeline-item'; dayEl.innerHTML = `<div class="dot"></div><div class="day"><strong>${day}</strong><div class="desc">${body}</div></div>`;
-                                    timeline.appendChild(dayEl);
-                                }
-                            }
-                            nodeIter = nodeIter.nextSibling;
-                        }
-                        if(timeline.children.length>0){
-                            card.appendChild(timeline);
-                        }
-                    }
-                }
+                cards.appendChild(card);
+                break;
+            }
+        }
+    });
 
+    if(foundAny){
+        return cards.outerHTML;
+    }
+    return html;
+}
+
+function showResults(html){
+    const transformed = transformToCards(html);
+    travelContent.innerHTML = transformed;
+    resultsWrapper.classList.remove('hidden');
+    resultsWrapper.classList.add('fade-in-up');
+    setTimeout(()=>resultsWrapper.classList.remove('fade-in-up'),700);
+}
+
+form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const q = queryInput.value.trim();
+    if(!q) return;
+    showSpinner();
+    try{
+        const resp = await fetch('/api/search', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({query:q}) });
+        const j = await resp.json();
+        hideSpinner();
+        if(resp.ok && j.success){
+            showResults(j.html);
+            window.scrollTo({top: resultsWrapper.offsetTop - 20, behavior:'smooth'});
+        } else {
+            showError(j.error || 'Unknown error');
+        }
+    }catch(err){
+        hideSpinner();
+        showError(err.message || 'Request failed');
+    }
+});
+
+resetBtn.addEventListener('click', ()=>{
+    queryInput.value = '';
     travelContent.innerHTML = '';
     resultsWrapper.classList.add('hidden');
     alertBox.classList.add('hidden');
     queryInput.focus();
 });
+
 </script>
 </body>
 </html>
