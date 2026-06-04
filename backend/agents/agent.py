@@ -4,8 +4,9 @@ import os
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
 import datetime
+import json
 import operator
-from typing import Annotated, TypedDict
+from typing import Annotated, Any, TypedDict
 from dotenv import load_dotenv
 
 from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage, ToolMessage
@@ -30,6 +31,7 @@ CURRENT_YEAR = datetime.datetime.now().year
 print("Loaded GROQ KEY:", os.getenv("GROQ_API_KEY"))
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
+    tool_cache: Annotated[dict[str, Any], operator.or_]
 
 
 # 🔥 UPDATED SYSTEM PROMPT (Multi-Feature Intelligent Agent)
@@ -59,6 +61,8 @@ CRITICAL TOOL USAGE RULES (STRICT)
 IMPORTANT:
 - NEVER generate flights, hotels, cars, weather, or visa manually.
 - ALWAYS wait for tool responses before generating final output.
+- Do not call the same tool twice with identical arguments in one request.
+- After receiving tool outputs, summarize them and stop calling tools again.
 - If a tool fails, include:
   "error": "Live data currently unavailable"
 
@@ -340,22 +344,28 @@ class Agent:
     def invoke_tools(self, state: AgentState):
         tool_calls = state["messages"][-1].tool_calls
         results = []
+        tool_cache = dict(state.get("tool_cache", {}))
 
         for t in tool_calls:
             print(f"Calling tool: {t}")
+            call_signature = json.dumps({"name": t["name"], "args": t.get("args", {})}, sort_keys=True, default=str)
 
-            if t["name"] not in self._tools:
-                result = "Invalid tool name"
+            if call_signature in tool_cache:
+                result = tool_cache[call_signature]
+            elif t["name"] not in self._tools:
+                result = {"status": "error", "message": "Invalid tool name", "data": []}
             else:
                 result = self._tools[t["name"]].invoke(t["args"])
+
+            tool_cache[call_signature] = result
 
             results.append(
                 ToolMessage(
                     tool_call_id=t["id"],
                     name=t["name"],
-                    content=str(result),
+                    content=json.dumps(result, ensure_ascii=False),
                 )
             )
 
         print("Returning tool results to model...")
-        return {"messages": results}
+        return {"messages": results, "tool_cache": tool_cache}

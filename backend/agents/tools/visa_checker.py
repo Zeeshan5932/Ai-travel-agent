@@ -1,5 +1,5 @@
 import os
-import serpapi
+from serpapi import GoogleSearch
 from langchain_core.tools import tool
 
 @tool
@@ -14,11 +14,16 @@ def visa_checker(nationality: str, destination: str):
         params = {
             "engine": "google",
             "q": query,
-            "api_key": os.getenv("SERPAPI_API_KEY")
         }
 
-        search = serpapi.search(params)
-        results = search.data.get("organic_results", [])
+        api_key = os.getenv("SERPAPI_API_KEY")
+        if not api_key:
+            return {"error": "SERPAPI_API_KEY is missing. Add it to your .env file."}
+
+        params["api_key"] = api_key
+
+        search = GoogleSearch(params)
+        results = search.get_dict().get("organic_results", [])
 
         if not results:
             return "Visa information not found."
@@ -26,4 +31,4 @@ def visa_checker(nationality: str, destination: str):
         return results[:3]
 
     except Exception as e:
-        return f"Error: {str(e)}"
+        return {"error": f"SerpAPI request failed: {str(e)}"}

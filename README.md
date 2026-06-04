@@ -59,6 +59,19 @@ npm start
 
 The frontend will be available at `http://localhost:3000` and will call the backend API at `http://localhost:8000`.
 
+### Troubleshooting
+
+If you see an error like `No Python at '...Python310\\python.exe'`, your virtual environment was created with a Python 3.10 install that is no longer available. Recreate the environment with a currently installed Python version, then reinstall the dependencies:
+
+```shell script
+deactivate
+rmdir /s /q venv
+pyenv local 3.11.9
+python -m venv venv
+venv\Scripts\activate
+pip install -r backend/requirements.txt
+```
+
 ## **Store Your API Keys**
 
 1. Create a `.env` file in the root directory of the project.
