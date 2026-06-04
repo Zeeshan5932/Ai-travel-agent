@@ -23,10 +23,41 @@ Clone the repository, set up the virtual environment, and install the required p
     poetry install --sync
     ```
 
+1. Install the backend API dependencies
+    ```shell script
+    pip install -r backend/requirements.txt
+    ```
+
 1. Enter virtual env by:
     ```shell script
     poetry shell
     ```
+
+## Run the Project
+
+Run the backend and frontend in two separate terminals.
+
+### 1. Start the backend API
+
+From the repository root, run:
+
+```shell script
+uvicorn backend.app:app --reload --host 127.0.0.1 --port 8000
+```
+
+The FastAPI backend will be available at `http://localhost:8000`, and the interactive API docs are at `http://localhost:8000/docs`.
+
+### 2. Start the frontend
+
+In a second terminal:
+
+```shell script
+cd frontend
+npm install
+npm start
+```
+
+The frontend will be available at `http://localhost:3000` and will call the backend API at `http://localhost:8000`.
 
 ## **Store Your API Keys**
 
@@ -47,10 +78,7 @@ Make sure to replace the placeholders (`your_openai_api_key`, `your_serpapi_api_
 This version includes the necessary environment variables for OpenAI, SERPAPI, LangChain, and SendGrid and the LANGCHAIN_TRACING_V2 and LANGCHAIN_PROJECT configurations.
 
 ### How to Run the Chatbot
-To start the chatbot, run the following command:
-```
-streamlit run app.py
-```
+Follow the steps in the [Run the Project](#run-the-project) section above. Open `http://localhost:3000` after both processes are running.
 
 ### Using the Chatbot
 Once launched, simply enter your travel request. For example:

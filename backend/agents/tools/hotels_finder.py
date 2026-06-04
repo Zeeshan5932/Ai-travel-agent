@@ -1,13 +1,15 @@
 import os
 from typing import Optional
-
+import datetime
 import serpapi
 from langchain.pydantic_v1 import BaseModel, Field
 
 from langchain_core.tools import tool
 
 # from pydantic import BaseModel, Field
-
+today = datetime.date.today()
+checkin = today + datetime.timedelta(days=30)
+checkout = today + datetime.timedelta(days=40)
 
 class HotelsInput(BaseModel):
     q: str = Field(description='Location of the hotel')
@@ -27,29 +29,28 @@ class HotelsInputSchema(BaseModel):
 
 @tool(args_schema=HotelsInputSchema)
 def hotels_finder(params: HotelsInput):
-    '''
-    Find hotels using the Google Hotels engine.
+    """
+    Find hotels using Google Hotels engine.
+    """
 
-    Returns:
-        dict: Hotel search results.
-    '''
+    query = {
+    "api_key": os.environ.get("SERPAPI_API_KEY"),
+    "engine": "google_hotels",
+    "hl": "en",
+    "gl": "us",
+    "q": params.q,
+    "check_in_date": checkin.strftime("%Y-%m-%d"),
+    "check_out_date": checkout.strftime("%Y-%m-%d"),
+    "currency": "USD",
+    "adults": params.adults,
+    "rooms": params.rooms,
+}
 
-    params = {
-        'api_key': os.environ.get('SERPAPI_API_KEY'),
-        'engine': 'google_hotels',
-        'hl': 'en',
-        'gl': 'us',
-        'q': params.q,
-        'check_in_date': params.check_in_date,
-        'check_out_date': params.check_out_date,
-        'currency': 'USD',
-        'adults': params.adults,
-        'children': params.children,
-        'rooms': params.rooms,
-        'sort_by': params.sort_by,
-        'hotel_class': params.hotel_class
-    }
+    try:
+        search = serpapi.search(query)
+        data = search.data
+        return data.get("properties", [])[:5]
 
-    search = serpapi.search(params)
-    results = search.data
-    return results['properties'][:5]
+    except Exception as e:
+        print("❌ HOTEL TOOL ERROR:", str(e))
+        return {"error": "Hotel data unavailable"}

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
     <title>AI Travel Agent</title>
@@ -211,5 +211,306 @@ resetBtn.addEventListener('click', ()=>{
 });
 
 </script>
+</body>
+</html> -->
+
+<% data = typeof data !== 'undefined' ? data : null; %>
+<% response = typeof response !== 'undefined' ? response : null; %>
+<% error = typeof error !== 'undefined' ? error : null; %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Travel Agent</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="animated-bg"></div>
+
+<nav class="navbar">
+    <div class="nav-inner">
+        <div class="brand">AI Travel<span class="dot">.</span></div>
+        <div class="nav-links">
+            <a href="#">Dashboard</a>
+            <a href="#">Trips</a>
+            <a href="#">Bookings</a>
+        </div>
+        <div class="nav-actions">
+            <button class="btn-ghost">Sign in</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+
+<header class="header">
+    <h1>AI Travel Agent</h1>
+    <p class="subtitle">Smart trip planning — Flights, Hotels, Cars, Weather & Visa</p>
+</header>
+
+<section class="hero">
+    <div class="hero-inner">
+        <h2>Your Personalized Travel Plan</h2>
+        <p class="hero-sub">Get a curated multi-day itinerary tailored for you.</p>
+    </div>
+</section>
+
+<section class="search-panel">
+    <form id="searchForm">
+        <textarea 
+            id="queryInput"
+            name="query" 
+            placeholder="Example: Plan my 5-day Paris trip under $3000"
+            required
+        ></textarea>
+
+        <div class="controls">
+            <button type="submit" class="btn-primary">Plan Trip</button>
+            <button type="button" id="resetBtn" class="btn-ghost">Plan Another Trip</button>
+        </div>
+    </form>
+</section>
+
+<section id="resultArea" class="result">
+
+    <div id="spinner" class="spinner hidden"></div>
+    <div id="alert" class="alert hidden"></div>
+
+    <div id="resultsWrapper" class="results-wrapper <%= (!data && !response) ? 'hidden' : '' %>">
+
+        <h2>Your Travel Plan</h2>
+
+        <div id="travelContent">
+
+            <!-- ========================= -->
+            <!-- STRUCTURED JSON RENDERING -->
+            <!-- ========================= -->
+
+            <% if (data && data.flights) { %>
+
+            <div class="grid">
+
+                <!-- Flights -->
+                <div class="card">
+                    <h3>✈ Flights</h3>
+                    <% data.flights.forEach(f => { %>
+                        <div class="flight-item">
+                            <% if (f.logo) { %>
+                                <img src="<%= f.logo %>" class="logo"/>
+                            <% } %>
+                            <div>
+                                <h4><%= f.airline %></h4>
+                                <p><strong><%= f.departure %></strong> → <strong><%= f.arrival %></strong></p>
+                                <p>Duration: <%= f.duration %></p>
+                                <p class="price">$<%= f.price %></p>
+                                <% if (f.booking_link) { %>
+                                    <a href="<%= f.booking_link %>" target="_blank" class="btn">Book Now</a>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+
+                <!-- Hotels -->
+                <% if (data.hotels && data.hotels.length) { %>
+                <div class="card">
+                    <h3>🏨 Hotels</h3>
+                    <% data.hotels.forEach(h => { %>
+                        <div class="hotel-item">
+                            <% if (h.image) { %>
+                                <img src="<%= h.image %>" class="hotel-img"/>
+                            <% } %>
+                            <h4><%= h.name %></h4>
+                            <p>Rating: ⭐ <%= h.rating %></p>
+                            <p class="price">$<%= h.total %></p>
+                            <% if (h.website) { %>
+                                <a href="<%= h.website %>" target="_blank" class="btn">Visit</a>
+                            <% } %>
+                        </div>
+                    <% }) %>
+                </div>
+                <% } %>
+
+            </div>
+
+            <% } else if (response) { %>
+
+                <!-- Fallback: Old HTML Response -->
+                <%- response %>
+
+            <% } %>
+
+        </div>
+    </div>
+
+</section>
+
+</div>
+
+<script>
+const form = document.getElementById('searchForm');
+const spinner = document.getElementById('spinner');
+const alertBox = document.getElementById('alert');
+const resultsWrapper = document.getElementById('resultsWrapper');
+const travelContent = document.getElementById('travelContent');
+const resetBtn = document.getElementById('resetBtn');
+const queryInput = document.getElementById('queryInput');
+
+form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const q = queryInput.value.trim();
+    if(!q) return;
+
+    spinner.classList.remove('hidden');
+    alertBox.classList.add('hidden');
+    resultsWrapper.classList.add('hidden');
+
+    try{
+        const resp = await fetch('/travel', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ query:q })
+        });
+
+        const result = await resp.json();
+        spinner.classList.add('hidden');
+
+        if(!resp.ok){
+            alertBox.textContent = result.error || 'Error';
+            alertBox.classList.remove('hidden');
+            return;
+        }
+
+        // Structured JSON rendering
+        if(result.type === "structured"){
+            renderStructured(result.data);
+            resultsWrapper.classList.remove('hidden');
+            return;
+        }
+
+        // Markdown fallback
+        if(result.type === "html"){
+            travelContent.innerHTML = result.html;
+            resultsWrapper.classList.remove('hidden');
+            return;
+        }
+
+    }catch(err){
+        spinner.classList.add('hidden');
+        alertBox.textContent = err.message;
+        alertBox.classList.remove('hidden');
+    }
+});
+
+// Render structured JSON properly
+function renderStructured(data){
+    let html = '<div class="grid">';
+
+    // Flights
+    if(data.flights && data.flights.length){
+        html += `<div class="card"><h3>✈ Flights</h3>`;
+
+        data.flights.forEach(flight =>{
+            html += `
+            <div class="flight-item">
+                ${flight.logo ? `<img src="${flight.logo}" class="logo"/>` : ''}
+                <div>
+                    <h4>${flight.airline || ''}</h4>
+                    <p><strong>${flight.departure || ''}</strong> → <strong>${flight.arrival || ''}</strong></p>
+                    <p>Duration: ${flight.duration || ''}</p>
+                    <p class="price">$${flight.price || ''}</p>
+                    ${flight.booking_url ? `<a href="${flight.booking_url}" target="_blank" class="btn">Book Now</a>` : ''}
+                </div>
+            </div>
+            `;
+        });
+
+        html += `</div>`;
+    }
+
+    // Hotels
+    if(data.hotels && data.hotels.length){
+        html += `<div class="card"><h3>🏨 Hotels</h3>`;
+
+        data.hotels.forEach(hotel =>{
+            html += `
+            <div class="hotel-item">
+                ${hotel.image ? `<img src="${hotel.image}" class="hotel-img"/>` : ''}
+                <h4>${hotel.name || ''}</h4>
+                <p>Location: ${hotel.location || ''}</p>
+                <p>Rating: ⭐ ${hotel.rating || ''}</p>
+                <p class="price">$${hotel.total_price || ''}</p>
+                ${hotel.website ? `<a href="${hotel.website}" target="_blank" class="btn">Visit</a>` : ''}
+            </div>
+            `;
+        });
+
+        html += `</div>`;
+    }
+
+    // Weather
+    if(data.weather){
+        html += `
+        <div class="card">
+            <h3>🌤 Weather</h3>
+            <p><strong>${data.weather.city || ''}</strong></p>
+            <p>${data.weather.temperature || ''}°C</p>
+            <p>${data.weather.description || ''}</p>
+        </div>`;
+    }
+
+    // Visa
+    if(data.visa){
+        html += `
+        <div class="card">
+            <h3>🛂 Visa Information</h3>
+            <p>Required: ${data.visa.required || ''}</p>
+            <p>${data.visa.explanation || ''}</p>
+        </div>`;
+    }
+
+    // Budget
+    if(data.budget){
+        html += `
+        <div class="card">
+            <h3>💰 Budget</h3>
+            <p>Total Flight Cost: $${data.budget.flight_cost || 0}</p>
+            <p>Total Hotel Cost: $${data.budget.hotel_cost || 0}</p>
+            <p>Total Trip Cost: $${data.budget.total_cost || 0}</p>
+            <p>Budget: $${data.budget.budget || 0}</p>
+            <p>Remaining: $${data.budget.remaining || 0}</p>
+        </div>`;
+    }
+
+    // Itinerary
+    if(data.itinerary && data.itinerary.length){
+        html += `<div class="card"><h3>🗺 Itinerary</h3>`;
+
+        data.itinerary.forEach(day=>{
+            html += `<h4>Day ${day.day}</h4><ul>`;
+            day.activities.forEach(act=>{
+                html += `<li>${act}</li>`;
+            });
+            html += `</ul>`;
+        });
+
+        html += `</div>`;
+    }
+
+    html += '</div>';
+
+    travelContent.innerHTML = html;
+}
+
+resetBtn.addEventListener('click', ()=>{
+    queryInput.value = '';
+    travelContent.innerHTML = '';
+    resultsWrapper.classList.add('hidden');
+    alertBox.classList.add('hidden');
+});
+</script>
+
 </body>
 </html>

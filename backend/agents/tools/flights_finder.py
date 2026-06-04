@@ -62,6 +62,11 @@ from typing import Optional
 import serpapi
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool
+import datetime
+
+today = datetime.date.today()
+default_outbound = today + datetime.timedelta(days=30)
+default_return = today + datetime.timedelta(days=40)
 
 
 class FlightsInput(BaseModel):
@@ -97,26 +102,37 @@ def flights_finder(
     """
     Find flights using Google Flights engine.
     """
+    outbound_str = (
+        outbound_date
+        if outbound_date
+        else default_outbound.strftime("%Y-%m-%d")
+    )
+    return_str = (
+        return_date
+        if return_date
+        else default_return.strftime("%Y-%m-%d")
+    )
 
     params = {
-        "api_key": os.getenv("SERPAPI_API_KEY"),
+        "api_key": os.environ.get("SERPAPI_API_KEY"),
         "engine": "google_flights",
         "hl": "en",
         "gl": "us",
         "departure_id": departure_airport,
         "arrival_id": arrival_airport,
-        "outbound_date": outbound_date,
-        "return_date": return_date,
+        "outbound_date": outbound_str,
+        "return_date": return_str,
         "currency": "USD",
         "adults": adults,
         "children": children,
         "infants_in_seat": infants_in_seat,
         "infants_on_lap": infants_on_lap,
-        "stops": "1",
     }
 
     try:
         search = serpapi.search(params)
-        return search.data.get("best_flights", [])
+        result =  search.data.get("best_flights", [])
+        return result
     except Exception as e:
-        return {"error": str(e)}
+        print("❌ FLIGHTS TOOL ERROR:", str(e))
+        return {"error": "Flight data unavailable"}

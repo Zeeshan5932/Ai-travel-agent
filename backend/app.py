@@ -222,51 +222,28 @@ def populate_envs(sender_email, receiver_email, subject):
 # -----------------------------
 
 @app.post("/travel")
-def travel(request: TravelRequest):
+def process_query(request: TravelRequest):
     try:
-        print("📥 Received request:", request.query)
-
         thread_id = str(uuid.uuid4())
 
         messages = [HumanMessage(content=request.query)]
         config = {"configurable": {"thread_id": thread_id}}
 
-        result = agent.graph.invoke(
-            {"messages": messages},
-            config=config
-        )
+        result = agent.graph.invoke({"messages": messages}, config=config)
 
-        raw_output = result["messages"][-1].content.strip()
+        raw_output = result["messages"][-1].content
 
-        # ✅ Try parsing structured JSON (future support)
-        try:
-            structured = json.loads(raw_output)
-            return {
-                "thread_id": thread_id,
-                "data": structured,
-                "format": "json"
-            }
-        except json.JSONDecodeError:
-            # If not JSON, fallback to normal response
-            return {
-                "thread_id": thread_id,
-                "response": raw_output,
-                "format": "text"
-            }
+        structured_data = json.loads(raw_output)
+
+        return {
+            "type": "structured",
+            "thread_id": thread_id,
+            "data": structured_data
+        }
 
     except Exception as e:
-        print("❌ ERROR INSIDE /travel:")
-        print(str(e))
-
-        detail = str(e)
-
-        if "invalid_api_key" in detail or "Incorrect API key" in detail:
-            raise HTTPException(
-                status_code=401,
-                detail="Model API key missing or invalid. " + detail
-            )
-
-        raise HTTPException(status_code=500, detail=detail)
+        print("ERROR:", e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/send-email")
