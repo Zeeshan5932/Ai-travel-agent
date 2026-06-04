@@ -5,6 +5,8 @@ const path = require("path");
 const marked = require("marked");
 
 const app = express();
+const PORT = 3000;
+const BACKEND_URL = "http://localhost:8000";
 
 // ✅ Tell Express exactly where views folder is
 app.set("views", path.join(__dirname, "views"));
