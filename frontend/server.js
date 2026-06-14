@@ -99,7 +99,7 @@ app.get("/", (req, res) => {
 app.post("/travel", async (req, res) => {
   try {
     console.log('Frontend /travel called with body:', req.body);
-    const apiResponse = await axios.post("http://localhost:8000/travel", {
+    const apiResponse = await axios.post(`${BACKEND_URL}/travel`, {
       query: req.body.query,
     });
 
@@ -126,6 +126,33 @@ app.post("/travel", async (req, res) => {
     return res.status(500).json({
       error: error.message,
     });
+  }
+});
+
+app.post("/budget-analysis", async (req, res) => {
+  try {
+    const apiResponse = await axios.post(`${BACKEND_URL}/budget-analysis`, req.body);
+    return res.json(apiResponse.data);
+  } catch (error) {
+    return res.status(500).json({ error: error.response?.data?.detail || error.message });
+  }
+});
+
+app.post("/weather", async (req, res) => {
+  try {
+    const apiResponse = await axios.post(`${BACKEND_URL}/weather`, req.body);
+    return res.json(apiResponse.data);
+  } catch (error) {
+    return res.status(500).json({ error: error.response?.data?.detail || error.message });
+  }
+});
+
+app.post("/visa-info", async (req, res) => {
+  try {
+    const apiResponse = await axios.post(`${BACKEND_URL}/visa-info`, req.body);
+    return res.json(apiResponse.data);
+  } catch (error) {
+    return res.status(500).json({ error: error.response?.data?.detail || error.message });
   }
 });
 

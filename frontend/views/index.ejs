@@ -1,516 +1,1446 @@
 <!-- <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>AI Travel Agent</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Travel Agent</title>
+
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
 </head>
+
 <body>
+  <div class="animated-bg"></div>
 
-<div class="animated-bg"></div>
-
-<nav class="navbar">
+  <nav class="navbar">
     <div class="nav-inner">
-        <div class="brand">AI Travel<span class="dot">.</span></div>
-        <div class="nav-links">
-            <a href="#">Dashboard</a>
-            <a href="#">Trips</a>
-            <a href="#">Bookings</a>
-        </div>
-        <div class="nav-actions">
-            <button class="btn-ghost">Sign in</button>
-        </div>
-    </div>
-</nav>
+      <div class="brand">AI Travel<span class="dot">.</span></div>
 
-<div class="container">
-    <header class="header">
-        <h1>AI Travel Agent</h1>
-        <p class="subtitle">Smart trip planning — Flights, Hotels, Cars, Weather & Visa</p>
+      <div class="nav-links">
+        <a href="#">Flights</a>
+        <a href="#">Hotels</a>
+        <a href="#">Budget</a>
+        <a href="#">Weather</a>
+      </div>
+
+      <div class="nav-actions">
+        <button class="btn-ghost" type="button">Smart Planner</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="hero">
+      <h2>Plan your next trip with AI</h2>
+      <p>
+        Search flights, hotels, budget details, visa notes and travel recommendations in one smart dashboard.
+      </p>
+    </section>
+
+    <header>
+      <h1>AI Travel Agent</h1>
+      <p class="subtitle">
+        Enter your travel query below. Example: Find flights from JFK to LHR and 4 star hotels in London from 2026-10-01 to 2026-10-07 for 1 adult.
+      </p>
     </header>
 
-    <section class="hero">
-        <div class="hero-inner">
-            <h2>Your Personalized Travel Plan</h2>
-            <p class="hero-sub">Get a curated multi-day itinerary with flights, hotels, weather, visa info and budget — tailored for you.</p>
-        </div>
-    </section>
-
     <section class="search-panel">
-        <form id="searchForm" action="/search" method="POST">
-            <textarea 
-                id="queryInput"
-                name="query" 
-                placeholder="Example: Plan my 5-day Paris trip under $3000 with weather and visa info"
-                required
-            ></textarea>
-
-            <div class="controls">
-                <button id="searchBtn" type="submit" class="btn-primary">Plan Trip</button>
-                <button id="resetBtn" type="button" class="btn-ghost">Plan Another Trip</button>
-            </div>
-        </form>
-    </section>
-
-    <section id="resultArea" class="result" aria-live="polite">
-        <div id="alert" class="alert hidden"></div>
-        <div id="spinner" class="spinner hidden" aria-hidden="true"></div>
-        <div id="resultsWrapper" class="results-wrapper hidden">
-            <h2>Your Travel Plan</h2>
-            <div class="travel-content" id="travelContent">
-                <% if (response) { %>
-                    <%- response %>
-                <% } %>
-            </div>
-        </div>
-    </section>
-
-</div>
-
-<script>
-// Client-side behavior: use fetch to call /api/search, show spinner, errors, and animate results
-const form = document.getElementById('searchForm');
-const spinner = document.getElementById('spinner');
-const alertBox = document.getElementById('alert');
-const resultsWrapper = document.getElementById('resultsWrapper');
-const travelContent = document.getElementById('travelContent');
-const resetBtn = document.getElementById('resetBtn');
-const queryInput = document.getElementById('queryInput');
-
-function showSpinner() { spinner.classList.remove('hidden'); resultsWrapper.classList.add('hidden'); alertBox.classList.add('hidden'); }
-function hideSpinner() { spinner.classList.add('hidden'); }
-function showError(msg){ alertBox.textContent = msg; alertBox.classList.remove('hidden'); alertBox.classList.add('shake'); setTimeout(()=>alertBox.classList.remove('shake'),700); }
-
-const ICONS = {
-    flight: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 12L22 2L14 22L11 13L2 12Z" fill="#6366f1"/></svg>',
-    hotel: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18v10H3V7z" fill="#0ea5e9"/><path d="M7 7v-2h2v2h6V5h2v2h2v2H5V7h2z" fill="#6366f1"/></svg>',
-    car: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 13h18v-2H3v2z" fill="#0ea5e9"/><path d="M5 11l1-3h12l1 3H5z" fill="#6366f1"/></svg>',
-    visa: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#6ee7b7"/><path d="M7 12h10v2H7z" fill="#065f46"/></svg>',
-    weather: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 14a4 4 0 1 1 0-8h1" stroke="#facc15" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    budget: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="6" width="18" height="12" rx="2" fill="#60a5fa"/></svg>',
-    itinerary: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 8h10" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/><path d="M7 12h10" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/><path d="M7 16h10" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/></svg>'
-};
-
-function transformToCards(html){
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    const sections = ['Flights','Hotels','Rental Cars','Weather','Visa','Budget Analysis','Budget','Itinerary'];
-    const cards = document.createElement('div');
-    cards.className = 'cards scroll-area';
-    let foundAny = false;
-
-    const headings = Array.from(tmp.querySelectorAll('h1,h2,h3,h4,h5,h6'));
-    headings.forEach((h)=>{
-        const text = h.textContent.trim();
-        for(const s of sections){
-            if(text.toLowerCase().includes(s.toLowerCase())){
-                foundAny = true;
-                let type = 'generic';
-                if(/flight/i.test(text)) type='flight';
-                if(/hotel/i.test(text)) type='hotel';
-                if(/car|rental/i.test(text)) type='car';
-                if(/visa/i.test(text)) type='visa';
-                if(/weather/i.test(text)) type='weather';
-                if(/budget/i.test(text)) type='budget';
-                if(/itinerar/i.test(text) || /day\s*\d+/i.test(text)) type='itinerary';
-
-                const card = document.createElement('div'); card.className='card '+type;
-
-                const header = document.createElement('div'); header.className='card-header';
-                const iconWrap = document.createElement('div'); iconWrap.className='card-icon'; iconWrap.innerHTML = ICONS[type] || ICONS['itinerary'];
-                const title = document.createElement('h4'); title.textContent = text;
-                header.appendChild(iconWrap); header.appendChild(title);
-                card.appendChild(header);
-
-                let node = h.nextSibling;
-                while(node){
-                    if(node.nodeType===1 && /^H[1-6]$/.test(node.tagName)) break;
-                    card.appendChild(node.cloneNode(true));
-                    node = node.nextSibling;
-                }
-
-                // hotel rating parsing -> stars
-                if(type==='hotel'){
-                    const txt = card.innerText || '';
-                    const m = txt.match(/(\d+(?:\.\d+)?)\s*\/\s*5/);
-                    const rating = m? parseFloat(m[1]) : null;
-                    if(rating){
-                        const stars = document.createElement('div'); stars.className='stars';
-                        const full = Math.floor(rating);
-                        const half = (rating - full) >= 0.5 ? 1 : 0;
-                        for(let i=0;i<full;i++) stars.innerHTML += '<span class="star full">★</span>';
-                        if(half) stars.innerHTML += '<span class="star half">★</span>';
-                        for(let i=full+half;i<5;i++) stars.innerHTML += '<span class="star empty">☆</span>';
-                        header.appendChild(stars);
-                    }
-                }
-
-                // budget bar
-                if(type==='budget'){
-                    const txt = card.innerText || '';
-                    const nums = Array.from(txt.matchAll(/\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/g)).map(m=>m[1].replace(/,/g,''));
-                    if(nums.length>=2){
-                        const budget = parseFloat(nums[0]);
-                        const spent = parseFloat(nums[1]);
-                        const pct = Math.max(0, Math.min(100, Math.round((spent/budget)*100)));
-                        const remaining = Math.round((budget - spent)*100)/100;
-                        const bar = document.createElement('div'); bar.className='budget-bar';
-                        bar.innerHTML = `<div class="budget-track"><div class="budget-fill" style="width:${pct}%"></div></div><div class="budget-meta">${remaining>=0?'<span class="under">Remaining: $'+Math.abs(remaining)+'</span>':'<span class="over">Over by: $'+Math.abs(remaining)+'</span>'} <span class="pct">(${pct}%)</span></div>`;
-                        card.appendChild(bar);
-                    }
-                }
-
-                cards.appendChild(card);
-                break;
-            }
-        }
-    });
-
-    if(foundAny){
-        return cards.outerHTML;
-    }
-    return html;
-}
-
-function showResults(html){
-    const transformed = transformToCards(html);
-    travelContent.innerHTML = transformed;
-    resultsWrapper.classList.remove('hidden');
-    resultsWrapper.classList.add('fade-in-up');
-    setTimeout(()=>resultsWrapper.classList.remove('fade-in-up'),700);
-}
-
-form.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const q = queryInput.value.trim();
-    if(!q) return;
-    showSpinner();
-    try{
-        const resp = await fetch('/api/search', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({query:q}) });
-        const j = await resp.json();
-        hideSpinner();
-        if(resp.ok && j.success){
-            showResults(j.html);
-            window.scrollTo({top: resultsWrapper.offsetTop - 20, behavior:'smooth'});
-        } else {
-            showError(j.error || 'Unknown error');
-        }
-    }catch(err){
-        hideSpinner();
-        showError(err.message || 'Request failed');
-    }
-});
-
-resetBtn.addEventListener('click', ()=>{
-    queryInput.value = '';
-    travelContent.innerHTML = '';
-    resultsWrapper.classList.add('hidden');
-    alertBox.classList.add('hidden');
-    queryInput.focus();
-});
-
-</script>
-</body>
-</html> -->
-
-<% data = typeof data !== 'undefined' ? data : null; %>
-<% response = typeof response !== 'undefined' ? response : null; %>
-<% error = typeof error !== 'undefined' ? error : null; %>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>AI Travel Agent</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-</head>
-<body>
-
-<div class="animated-bg"></div>
-
-<nav class="navbar">
-    <div class="nav-inner">
-        <div class="brand">AI Travel<span class="dot">.</span></div>
-        <div class="nav-links">
-            <a href="#">Dashboard</a>
-            <a href="#">Trips</a>
-            <a href="#">Bookings</a>
-        </div>
-        <div class="nav-actions">
-            <button class="btn-ghost">Sign in</button>
-        </div>
-    </div>
-</nav>
-
-<div class="container">
-
-<header class="header">
-    <h1>AI Travel Agent</h1>
-    <p class="subtitle">Smart trip planning — Flights, Hotels, Cars, Weather & Visa</p>
-</header>
-
-<section class="hero">
-    <div class="hero-inner">
-        <h2>Your Personalized Travel Plan</h2>
-        <p class="hero-sub">Get a curated multi-day itinerary tailored for you.</p>
-    </div>
-</section>
-
-<section class="search-panel">
-    <form id="searchForm">
-        <textarea 
-            id="queryInput"
-            name="query" 
-            placeholder="Example: Plan my 5-day Paris trip under $3000"
-            required
+      <form id="travelForm">
+        <textarea
+          id="query"
+          placeholder="Example: Find flights from JFK to LHR and 4 star hotels in London from 2026-10-01 to 2026-10-07 for 1 adult"
         ></textarea>
 
         <div class="controls">
-            <button type="submit" class="btn-primary">Plan Trip</button>
-            <button type="button" id="resetBtn" class="btn-ghost">Plan Another Trip</button>
+          <button class="btn-primary" type="submit">
+            Generate Travel Plan
+          </button>
+
+          <button class="btn-ghost" type="button" id="clearBtn">
+            Clear
+          </button>
         </div>
-    </form>
-</section>
+      </form>
+    </section>
 
-<section id="resultArea" class="result">
+    <section class="result">
+      <div id="resultBox"></div>
+    </section>
+  </main>
 
-    <div id="spinner" class="spinner hidden"></div>
-    <div id="alert" class="alert hidden"></div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const API_URL = "http://127.0.0.1:8000/travel";
 
-    <div id="resultsWrapper" class="results-wrapper <%= (!data && !response) ? 'hidden' : '' %>">
+      const form = document.getElementById("travelForm");
+      const queryInput = document.getElementById("query");
+      const resultBox = document.getElementById("resultBox");
+      const clearBtn = document.getElementById("clearBtn");
 
-        <h2>Your Travel Plan</h2>
+      if (!form || !queryInput || !resultBox) {
+        console.error("Required HTML elements missing: travelForm, query, or resultBox");
+        return;
+      }
 
-        <div id="travelContent">
+      clearBtn.addEventListener("click", function () {
+        queryInput.value = "";
+        resultBox.innerHTML = "";
+      });
 
-            <!-- ========================= -->
-            <!-- STRUCTURED JSON RENDERING -->
-            <!-- ========================= -->
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
 
-            <% if (data && data.flights) { %>
+        const query = queryInput.value.trim();
 
-            <div class="grid">
+        if (!query) {
+          resultBox.innerHTML = `
+            <div class="empty-state">
+              <div>
+                <strong>Please enter your travel query</strong>
+                <p>Example: Find flights from JFK to LHR and hotels in London from 2026-10-01 to 2026-10-07.</p>
+              </div>
+            </div>
+          `;
+          return;
+        }
 
-                <!-- Flights -->
-                <div class="card">
-                    <h3>✈ Flights</h3>
-                    <% data.flights.forEach(f => { %>
-                        <div class="flight-item">
-                            <% if (f.logo) { %>
-                                <img src="<%= f.logo %>" class="logo"/>
-                            <% } %>
-                            <div>
-                                <h4><%= f.airline %></h4>
-                                <p><strong><%= f.departure %></strong> → <strong><%= f.arrival %></strong></p>
-                                <p>Duration: <%= f.duration %></p>
-                                <p class="price">$<%= f.price %></p>
-                                <% if (f.booking_link) { %>
-                                    <a href="<%= f.booking_link %>" target="_blank" class="btn">Book Now</a>
-                                <% } %>
-                            </div>
-                        </div>
-                    <% }) %>
-                </div>
+        resultBox.innerHTML = `
+          <div class="results-wrapper">
+            <div class="spinner"></div>
+            <div class="empty-state">
+              <div>
+                <strong>Creating your travel plan...</strong>
+                <p>Finding flights, hotels and trip details. This may take a few seconds.</p>
+              </div>
+            </div>
+          </div>
+        `;
 
-                <!-- Hotels -->
-                <% if (data.hotels && data.hotels.length) { %>
-                <div class="card">
-                    <h3>🏨 Hotels</h3>
-                    <% data.hotels.forEach(h => { %>
-                        <div class="hotel-item">
-                            <% if (h.image) { %>
-                                <img src="<%= h.image %>" class="hotel-img"/>
-                            <% } %>
-                            <h4><%= h.name %></h4>
-                            <p>Rating: ⭐ <%= h.rating %></p>
-                            <p class="price">$<%= h.total %></p>
-                            <% if (h.website) { %>
-                                <a href="<%= h.website %>" target="_blank" class="btn">Visit</a>
-                            <% } %>
-                        </div>
-                    <% }) %>
-                </div>
-                <% } %>
+        try {
+          const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ query })
+          });
 
+          const result = await response.json();
+
+          console.log("FULL BACKEND RESPONSE:", result);
+
+          if (!response.ok) {
+            throw new Error(result.detail || "Backend error");
+          }
+
+          const travelData = normalizeTravelResponse(result);
+          renderTravelPlan(travelData, result.thread_id);
+
+        } catch (error) {
+          console.error("Frontend error:", error);
+
+          resultBox.innerHTML = `
+            <div class="alert">
+              <strong>Something went wrong.</strong>
+              <p>${escapeHtml(error.message)}</p>
+              <p>Make sure backend is running on http://127.0.0.1:8000</p>
+            </div>
+          `;
+        }
+      });
+
+      function normalizeTravelResponse(result) {
+        let data = result.data || result;
+
+        if (typeof data === "string") {
+          try {
+            data = JSON.parse(data);
+          } catch (e) {
+            return {
+              flights: [],
+              hotels: [],
+              weather: null,
+              visa: null,
+              budget: null,
+              rawText: data
+            };
+          }
+        }
+
+        if (!data || typeof data !== "object") {
+          data = {};
+        }
+
+        const rawOutput = result.raw_output || "";
+
+        let parsedRaw = null;
+
+        if (typeof rawOutput === "string") {
+          try {
+            parsedRaw = JSON.parse(rawOutput);
+          } catch (e) {
+            parsedRaw = null;
+          }
+        }
+
+        const finalData = parsedRaw || data;
+
+        return {
+          flights:
+            finalData.flights ||
+            finalData.flight_options ||
+            finalData.best_flights ||
+            finalData.other_flights ||
+            finalData.flight_results ||
+            [],
+
+          hotels:
+            finalData.hotels ||
+            finalData.hotel_options ||
+            finalData.properties ||
+            finalData.hotel_results ||
+            [],
+
+          weather:
+            finalData.weather ||
+            finalData.weather_info ||
+            null,
+
+          visa:
+            finalData.visa ||
+            finalData.visa_information ||
+            finalData.visa_info ||
+            null,
+
+          budget:
+            finalData.budget ||
+            finalData.budget_analysis ||
+            null,
+
+          rawText:
+            typeof rawOutput === "string" ? rawOutput : ""
+        };
+      }
+
+      function renderTravelPlan(data, threadId) {
+        const flights = Array.isArray(data.flights) ? data.flights : [];
+        const hotels = Array.isArray(data.hotels) ? data.hotels : [];
+        const computedBudget = calculateBudget(flights, hotels);
+
+        resultBox.innerHTML = `
+          <div class="results-wrapper fade-in-up">
+            <div class="results-header">
+              <div>
+                <div class="eyebrow">AI Generated Plan</div>
+                <h2>Your Travel Dashboard</h2>
+                <p class="results-subtitle">
+                  Curated flights, hotels, budget, weather and visa information in one clean view.
+                </p>
+              </div>
+
+              <div class="result-meta">
+                <span class="result-badge">✈️ Flights: ${flights.length}</span>
+                <span class="result-badge">🏨 Hotels: ${hotels.length}</span>
+              </div>
             </div>
 
-            <% } else if (response) { %>
+            <div class="dashboard-grid">
+              <div class="panel panel-large">
+                <div class="panel-title">
+                  <h3>✈️ Flight Options</h3>
+                  <span class="panel-chip">${flights.length || 0} found</span>
+                </div>
+                ${renderFlights(flights)}
+              </div>
 
-                <!-- Fallback: Old HTML Response -->
-                <%- response %>
+              <div class="panel panel-small">
+                <div class="panel-title">
+                  <h3>🌤️ Weather</h3>
+                </div>
+                ${renderWeather(data.weather)}
+              </div>
 
-            <% } %>
+              <div class="panel panel-large">
+                <div class="panel-title">
+                  <h3>🏨 Hotel Options</h3>
+                  <span class="panel-chip">${hotels.length || 0} found</span>
+                </div>
+                ${renderHotels(hotels)}
+              </div>
 
-        </div>
-    </div>
+              <div class="panel panel-budget">
+                <div class="panel-title">
+                  <h3>💰 Budget</h3>
+                </div>
+                ${renderBudget(data.budget, computedBudget)}
+              </div>
 
-</section>
+              <div class="panel panel-small">
+                <div class="panel-title">
+                  <h3>🛂 Visa Information</h3>
+                </div>
+                ${renderVisa(data.visa)}
+              </div>
 
-</div>
+              ${data.rawText ? `
+                <div class="panel panel-large">
+                  <div class="panel-title">
+                    <h3>📝 Agent Response</h3>
+                  </div>
+                  ${renderRawText(data.rawText)}
+                </div>
+              ` : ""}
+            </div>
+          </div>
+        `;
+      }
 
-<script>
-const form = document.getElementById('searchForm');
-const spinner = document.getElementById('spinner');
-const alertBox = document.getElementById('alert');
-const resultsWrapper = document.getElementById('resultsWrapper');
-const travelContent = document.getElementById('travelContent');
-const resetBtn = document.getElementById('resetBtn');
-const queryInput = document.getElementById('queryInput');
-
-form.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const q = queryInput.value.trim();
-    if(!q) return;
-
-    spinner.classList.remove('hidden');
-    alertBox.classList.add('hidden');
-    resultsWrapper.classList.add('hidden');
-
-    try{
-        const resp = await fetch('/travel', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ query:q })
-        });
-
-        const result = await resp.json();
-        spinner.classList.add('hidden');
-
-        if(!resp.ok){
-            alertBox.textContent = result.error || 'Error';
-            alertBox.classList.remove('hidden');
-            return;
+      function renderFlights(flights) {
+        if (!flights.length) {
+          return `
+            <div class="empty-state">
+              <div>
+                <strong>No flight data available</strong>
+                <p>Backend did not return flight options. Try future dates like 2026-10-01.</p>
+              </div>
+            </div>
+          `;
         }
 
-        // Structured JSON rendering
-        if(result.type === "structured"){
-            renderStructured(result.data);
-            resultsWrapper.classList.remove('hidden');
-            return;
-        }
+        const cards = flights.slice(0, 6).map((flight, index) => {
+          const airline = getFlightAirline(flight);
+          const departure = getValue(flight, ["departure_airport", "departure", "from", "departure_id"], "Departure");
+          const arrival = getValue(flight, ["arrival_airport", "arrival", "to", "arrival_id"], "Arrival");
+          const route = getValue(flight, ["route"], `${departure} → ${arrival}`);
+          const duration = getValue(flight, ["duration", "total_duration"], "N/A");
+          const price = getPrice(flight);
+          const stops = getValue(flight, ["stops", "layovers"], "N/A");
+          const link = getValue(flight, ["booking_link", "link", "url"], "#");
+          const image = getFlightImage(airline);
 
-        // Markdown fallback
-        if(result.type === "html"){
-            travelContent.innerHTML = result.html;
-            resultsWrapper.classList.remove('hidden');
-            return;
-        }
+          return `
+            <div class="result-card">
+              <div class="image-wrap">
+                <img class="flight-image" src="${image}" alt="${escapeHtml(airline)} flight" />
+                <span class="image-badge">Flight ${index + 1}</span>
+              </div>
 
-    }catch(err){
-        spinner.classList.add('hidden');
-        alertBox.textContent = err.message;
-        alertBox.classList.remove('hidden');
-    }
-});
-
-// Render structured JSON properly
-function renderStructured(data){
-    let html = '<div class="grid">';
-
-    // Flights
-    if(data.flights && data.flights.length){
-        html += `<div class="card"><h3>✈ Flights</h3>`;
-
-        data.flights.forEach(flight =>{
-            html += `
-            <div class="flight-item">
-                ${flight.logo ? `<img src="${flight.logo}" class="logo"/>` : ''}
+              <div class="card-header-row">
                 <div>
-                    <h4>${flight.airline || ''}</h4>
-                    <p><strong>${flight.departure || ''}</strong> → <strong>${flight.arrival || ''}</strong></p>
-                    <p>Duration: ${flight.duration || ''}</p>
-                    <p class="price">$${flight.price || ''}</p>
-                    ${flight.booking_url ? `<a href="${flight.booking_url}" target="_blank" class="btn">Book Now</a>` : ''}
+                  <div class="card-kicker">Airline</div>
+                  <h4>${escapeHtml(airline)}</h4>
                 </div>
+                <div class="price-pill">${price ? "$" + price : "N/A"}</div>
+              </div>
+
+              <div class="card-body-list">
+                <div>
+                  <span>Route</span>
+                  <strong>${escapeHtml(route)}</strong>
+                </div>
+                <div>
+                  <span>Duration</span>
+                  <strong>${escapeHtml(String(duration))}</strong>
+                </div>
+                <div>
+                  <span>Stops</span>
+                  <strong>${escapeHtml(String(stops))}</strong>
+                </div>
+              </div>
+
+              ${link !== "#" ? `
+                <a class="btn-link" href="${link}" target="_blank" rel="noopener noreferrer">Book Flight</a>
+              ` : `
+                <span class="muted">Booking link not available</span>
+              `}
             </div>
-            `;
-        });
+          `;
+        }).join("");
 
-        html += `</div>`;
-    }
+        return `<div class="card-grid">${cards}</div>`;
+      }
 
-    // Hotels
-    if(data.hotels && data.hotels.length){
-        html += `<div class="card"><h3>🏨 Hotels</h3>`;
-
-        data.hotels.forEach(hotel =>{
-            html += `
-            <div class="hotel-item">
-                ${hotel.image ? `<img src="${hotel.image}" class="hotel-img"/>` : ''}
-                <h4>${hotel.name || ''}</h4>
-                <p>Location: ${hotel.location || ''}</p>
-                <p>Rating: ⭐ ${hotel.rating || ''}</p>
-                <p class="price">$${hotel.total_price || ''}</p>
-                ${hotel.website ? `<a href="${hotel.website}" target="_blank" class="btn">Visit</a>` : ''}
+      function renderHotels(hotels) {
+        if (!hotels.length) {
+          return `
+            <div class="empty-state">
+              <div>
+                <strong>No hotel data available</strong>
+                <p>Backend did not return hotel options. Try a city name and future dates.</p>
+              </div>
             </div>
-            `;
-        });
+          `;
+        }
 
-        html += `</div>`;
-    }
+        const cards = hotels.slice(0, 6).map((hotel, index) => {
+          const name = getValue(hotel, ["name", "title"], "Hotel");
+          const location = getValue(hotel, ["location", "address", "neighborhood"], "Location not available");
+          const rating = getValue(hotel, ["rating", "extracted_hotel_class", "hotel_class"], "N/A");
+          const price = getPrice(hotel);
+          const link = getValue(hotel, ["link", "booking_link", "url"], "#");
+          const image = getHotelImageFromData(hotel, name, location);
 
-    // Weather
-    if(data.weather){
-        html += `
-        <div class="card">
-            <h3>🌤 Weather</h3>
-            <p><strong>${data.weather.city || ''}</strong></p>
-            <p>${data.weather.temperature || ''}°C</p>
-            <p>${data.weather.description || ''}</p>
-        </div>`;
-    }
+          const amenities = getHotelAmenities(hotel);
 
-    // Visa
-    if(data.visa){
-        html += `
-        <div class="card">
-            <h3>🛂 Visa Information</h3>
-            <p>Required: ${data.visa.required || ''}</p>
-            <p>${data.visa.explanation || ''}</p>
-        </div>`;
-    }
+          return `
+            <div class="result-card">
+              <div class="image-wrap">
+                <img class="card-image" src="${image}" alt="${escapeHtml(name)} hotel" />
+                <span class="image-badge">⭐ ${escapeHtml(String(rating))}</span>
+              </div>
 
-    // Budget
-    if(data.budget){
-        html += `
-        <div class="card">
-            <h3>💰 Budget</h3>
-            <p>Total Flight Cost: $${data.budget.flight_cost || 0}</p>
-            <p>Total Hotel Cost: $${data.budget.hotel_cost || 0}</p>
-            <p>Total Trip Cost: $${data.budget.total_cost || 0}</p>
-            <p>Budget: $${data.budget.budget || 0}</p>
-            <p>Remaining: $${data.budget.remaining || 0}</p>
-        </div>`;
-    }
+              <div class="card-header-row">
+                <div>
+                  <div class="card-kicker">Hotel</div>
+                  <h4>${escapeHtml(name)}</h4>
+                </div>
+                <div class="price-pill">${price ? "$" + price : "N/A"}</div>
+              </div>
 
-    // Itinerary
-    if(data.itinerary && data.itinerary.length){
-        html += `<div class="card"><h3>🗺 Itinerary</h3>`;
+              <div class="card-body-list compact">
+                <div>
+                  <span>Location</span>
+                  <strong>${escapeHtml(location)}</strong>
+                </div>
+              </div>
 
-        data.itinerary.forEach(day=>{
-            html += `<h4>Day ${day.day}</h4><ul>`;
-            day.activities.forEach(act=>{
-                html += `<li>${act}</li>`;
-            });
-            html += `</ul>`;
-        });
+              ${amenities.length ? `
+                <div class="amenities">
+                  ${amenities.slice(0, 4).map(item => `<span>${escapeHtml(item)}</span>`).join("")}
+                </div>
+              ` : ""}
 
-        html += `</div>`;
-    }
+              ${link !== "#" ? `
+                <a class="btn-link" href="${link}" target="_blank" rel="noopener noreferrer">View Hotel</a>
+              ` : `
+                <span class="muted">Hotel link not available</span>
+              `}
+            </div>
+          `;
+        }).join("");
 
-    html += '</div>';
+        return `<div class="card-grid">${cards}</div>`;
+      }
 
-    travelContent.innerHTML = html;
-}
+      function renderWeather(weather) {
+        if (!weather || typeof weather !== "object" || Object.keys(weather).length === 0) {
+          return `
+            <div class="mini-card-content">
+              <div class="mini-icon">🌤️</div>
+              <div>
+                <h4>Weather unavailable</h4>
+                <p class="muted">
+                  Your backend weather endpoint is still dummy. Connect WeatherAPI or OpenWeather to show real temperature.
+                </p>
+              </div>
+            </div>
+          `;
+        }
 
-resetBtn.addEventListener('click', ()=>{
-    queryInput.value = '';
-    travelContent.innerHTML = '';
-    resultsWrapper.classList.add('hidden');
-    alertBox.classList.add('hidden');
-});
-</script>
+        const temp = getValue(weather, ["temperature", "temp", "current_temp"], "N/A");
+        const condition = getValue(weather, ["condition", "description", "summary"], "Weather information");
+        const city = getValue(weather, ["city", "location", "destination"], "Destination");
 
+        return `
+          <div class="weather-mini">
+            <div class="mini-card-content">
+              <div class="mini-icon">🌤️</div>
+              <div>
+                <h4>${escapeHtml(city)}</h4>
+                <p class="muted">${escapeHtml(condition)}</p>
+              </div>
+            </div>
+
+            <div class="weather-temp">${escapeHtml(String(temp))}°C</div>
+          </div>
+        `;
+      }
+
+      function renderVisa(visa) {
+        if (!visa || typeof visa !== "object" || Object.keys(visa).length === 0) {
+          return `
+            <div class="mini-card-content">
+              <div class="mini-icon">🛂</div>
+              <div>
+                <h4>Visa details unavailable</h4>
+                <p class="muted">
+                  Add nationality and destination country in the query to generate visa information.
+                </p>
+              </div>
+            </div>
+          `;
+        }
+
+        const required = getValue(visa, ["required", "visa_required", "status"], "Check required");
+        const details = getValue(visa, ["details", "message", "notes", "summary"], "");
+
+        return `
+          <div class="mini-card-content">
+            <div class="mini-icon">🛂</div>
+            <div>
+              <h4>Required: ${escapeHtml(String(required))}</h4>
+              <p class="visa-summary">${escapeHtml(String(details))}</p>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderBudget(budget, computedBudget) {
+        const finalBudget = {
+          totalFlightCost: Number(budget?.total_flight_cost || budget?.flight_cost || computedBudget.totalFlightCost || 0),
+          totalHotelCost: Number(budget?.total_hotel_cost || budget?.hotel_cost || computedBudget.totalHotelCost || 0),
+          totalTripCost: Number(budget?.total_trip_cost || budget?.total_cost || computedBudget.totalTripCost || 0),
+          budget: Number(budget?.budget || computedBudget.budget || 0),
+          remaining: Number(budget?.remaining || computedBudget.remaining || 0)
+        };
+
+        const progress = finalBudget.budget > 0
+          ? Math.min((finalBudget.totalTripCost / finalBudget.budget) * 100, 100)
+          : finalBudget.totalTripCost > 0
+            ? 65
+            : 0;
+
+        return `
+          <div class="budget-card">
+            <div class="budget-metrics">
+              <div>
+                <span>Flight Cost</span>
+                <strong>$${formatNumber(finalBudget.totalFlightCost)}</strong>
+              </div>
+
+              <div>
+                <span>Hotel Cost</span>
+                <strong>$${formatNumber(finalBudget.totalHotelCost)}</strong>
+              </div>
+
+              <div>
+                <span>Total Trip</span>
+                <strong>$${formatNumber(finalBudget.totalTripCost)}</strong>
+              </div>
+
+              <div>
+                <span>Remaining</span>
+                <strong>$${formatNumber(finalBudget.remaining)}</strong>
+              </div>
+            </div>
+
+            <div class="budget-progress-wrap">
+              <div class="budget-progress">
+                <span style="width: ${progress}%"></span>
+              </div>
+              <div class="budget-progress-label">
+                ${finalBudget.totalTripCost > 0
+                  ? "Estimated from available flight and hotel prices."
+                  : "Budget is empty because backend did not return numeric prices."}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderRawText(text) {
+        return `<pre class="raw-text">${escapeHtml(text)}</pre>`;
+      }
+
+      function getValue(obj, keys, fallback = "") {
+        for (const key of keys) {
+          if (obj && obj[key] !== undefined && obj[key] !== null && obj[key] !== "") {
+            if (typeof obj[key] === "object") {
+              if (obj[key].name) return obj[key].name;
+              if (obj[key].code) return obj[key].code;
+              return JSON.stringify(obj[key]);
+            }
+            return obj[key];
+          }
+        }
+        return fallback;
+      }
+
+      function getFlightAirline(flight) {
+        if (flight.airline) return flight.airline;
+        if (flight.name) return flight.name;
+        if (flight.carrier) return flight.carrier;
+
+        if (Array.isArray(flight.flights) && flight.flights.length) {
+          return flight.flights[0].airline || flight.flights[0].flight_number || "Airline";
+        }
+
+        return "Airline";
+      }
+
+      function getPrice(item) {
+        const possiblePrice =
+          item.price ||
+          item.price_total ||
+          item.extracted_price ||
+          item.total_price ||
+          item.rate_per_night?.extracted_lowest ||
+          item.total_rate?.extracted_lowest ||
+          item.price?.extracted ||
+          item.price?.value;
+
+        if (!possiblePrice) return 0;
+
+        if (typeof possiblePrice === "number") return Math.round(possiblePrice);
+
+        const cleaned = String(possiblePrice).replace(/[^0-9.]/g, "");
+        return Math.round(Number(cleaned)) || 0;
+      }
+
+      function calculateBudget(flights, hotels) {
+        const flightPrices = flights.map(getPrice).filter(price => price > 0);
+        const hotelPrices = hotels.map(getPrice).filter(price => price > 0);
+
+        const totalFlightCost = flightPrices.length ? flightPrices[0] : 0;
+        const totalHotelCost = hotelPrices.length ? hotelPrices[0] : 0;
+        const totalTripCost = totalFlightCost + totalHotelCost;
+
+        return {
+          totalFlightCost,
+          totalHotelCost,
+          totalTripCost,
+          budget: 0,
+          remaining: 0
+        };
+      }
+
+      function getHotelAmenities(hotel) {
+        const amenities =
+          hotel.amenities ||
+          hotel.extensions ||
+          hotel.features ||
+          [];
+
+        if (Array.isArray(amenities)) {
+          return amenities.map(item => String(item));
+        }
+
+        return [];
+      }
+
+      function getHotelImageFromData(hotel, name, location) {
+        return (
+          hotel.thumbnail ||
+          hotel.image ||
+          hotel.image_url ||
+          hotel.images?.[0]?.thumbnail ||
+          hotel.images?.[0]?.original_image ||
+          hotel.images?.[0] ||
+          getFallbackHotelImage(name, location)
+        );
+      }
+
+      function getFallbackHotelImage(name, location) {
+        const search = encodeURIComponent(`${name} ${location} hotel`);
+        return `https://source.unsplash.com/800x500/?hotel,travel,${search}`;
+      }
+
+      function getFlightImage(airline) {
+        const query = encodeURIComponent(`${airline} airplane`);
+        return `https://source.unsplash.com/800x400/?airplane,flight,${query}`;
+      }
+
+      function formatNumber(value) {
+        return Number(value || 0).toLocaleString();
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+    });
+  </script>
+</body>
+</html> -->
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Travel Agent</title>
+
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+</head>
+
+<body>
+  <div class="animated-bg"></div>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <div class="brand">AI Travel<span class="dot">.</span></div>
+
+      <div class="nav-links">
+        <a href="#">Flights</a>
+        <a href="#">Hotels</a>
+        <a href="#">Budget</a>
+        <a href="#">Weather</a>
+      </div>
+
+      <div class="nav-actions">
+        <button class="btn-ghost" type="button">Smart Planner</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-eyebrow">✦ AI-Powered Travel Planning</div>
+        <h2>
+          Plan Your <span class="gradient-text">Dream Trip</span> with AI —
+          Personalized Travel Planning in Seconds
+        </h2>
+        <p>
+          Search flights, hotels, budget details, visa notes and travel recommendations in one smart dashboard. Just describe your trip and let AI handle the rest.
+        </p>
+        <div class="hero-ctas">
+          <a href="#travelForm" class="btn-hero-primary">🚀 Start Planning Free</a>
+          <a href="#features" class="btn-hero-secondary">How It Works</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <strong>120+</strong>
+            <span>Countries Covered</span>
+          </div>
+          <div class="hero-stat">
+            <strong>50K+</strong>
+            <span>Trips Planned</span>
+          </div>
+          <div class="hero-stat">
+            <strong>4.9★</strong>
+            <span>Average Rating</span>
+          </div>
+          <div class="hero-stat">
+            <strong>&lt;10s</strong>
+            <span>Avg. Plan Time</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <header>
+      <h1>AI Travel Agent</h1>
+      <p class="subtitle">
+        Enter your travel query below. Example: Find flights from JFK to LHR and 4 star hotels in London from 2026-10-01 to 2026-10-07 for 1 adult.
+      </p>
+    </header>
+
+    <section class="search-panel">
+      <form id="travelForm">
+        <textarea
+          id="query"
+          placeholder="Example: Find flights from JFK to LHR and 4 star hotels in London from 2026-10-01 to 2026-10-07 for 1 adult"
+        ></textarea>
+
+        <div class="controls">
+          <button class="btn-primary" type="submit">
+            Generate Travel Plan
+          </button>
+
+          <button class="btn-ghost" type="button" id="clearBtn">
+            Clear
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="result">
+      <div id="resultBox"></div>
+    </section>
+
+    <section class="features-section reveal" id="features">
+      <div class="section-heading">
+        <div class="eyebrow">How It Works</div>
+        <h2>Your Trip, Planned in Three Simple Steps</h2>
+        <p>Our AI agent searches flights, hotels, weather and visa requirements all at once — so you don't have to juggle ten different tabs.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h4>Describe Your Trip</h4>
+          <p>Tell us where you're going, when, and your preferences in plain language — no complicated forms.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h4>AI Builds Your Plan</h4>
+          <p>Our agent searches flights, hotels, weather, visa rules and budget in real time and assembles a complete dashboard.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🧳</div>
+          <h4>Review &amp; Book</h4>
+          <p>Compare options side by side, check your budget breakdown, and book directly through trusted partner links.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <div class="footer-brand">AI Travel<span class="dot">.</span></div>
+        <p style="max-width: 38ch; line-height: 1.6; font-size: 0.92rem;">
+          Your AI-powered co-pilot for flights, hotels, budgets and itineraries — built to make trip planning effortless.
+        </p>
+      </div>
+      <div class="footer-col">
+        <h5>Explore</h5>
+        <a href="#">Flights</a>
+        <a href="#">Hotels</a>
+        <a href="#">Budget Planner</a>
+        <a href="#">Weather</a>
+      </div>
+      <div class="footer-col">
+        <h5>Company</h5>
+        <a href="#">About</a>
+        <a href="#">Careers</a>
+        <a href="#">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h5>Legal</h5>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2026 AI Travel. All rights reserved.
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const API_URL = "http://127.0.0.1:8000/travel";
+
+      const form = document.getElementById("travelForm");
+      const queryInput = document.getElementById("query");
+      const resultBox = document.getElementById("resultBox");
+      const clearBtn = document.getElementById("clearBtn");
+
+      if (!form || !queryInput || !resultBox) {
+        console.error("Required HTML elements missing: travelForm, query, or resultBox");
+        return;
+      }
+
+      clearBtn.addEventListener("click", function () {
+        queryInput.value = "";
+        resultBox.innerHTML = "";
+      });
+
+      // Scroll-reveal animations
+      const revealEls = document.querySelectorAll(".reveal");
+      if (revealEls.length && "IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.15 });
+        revealEls.forEach((el) => observer.observe(el));
+      }
+
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const query = queryInput.value.trim();
+
+        if (!query) {
+          resultBox.innerHTML = `
+            <div class="empty-state">
+              <div>
+                <strong>Please enter your travel query</strong>
+                <p>Example: Find flights from JFK to LHR and hotels in London from 2026-10-01 to 2026-10-07.</p>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        resultBox.innerHTML = `
+          <div class="results-wrapper fade-in-up">
+            <div class="ai-loading">
+              <div class="ai-avatar">✈️</div>
+              <div>
+                <strong>Creating your travel plan</strong>
+                <div class="typing-dots" style="margin-top:6px;">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+            <div class="skeleton-grid">
+              <div class="skeleton-card">
+                <div class="skeleton-block img"></div>
+                <div class="skeleton-block line"></div>
+                <div class="skeleton-block line short"></div>
+              </div>
+              <div class="skeleton-card">
+                <div class="skeleton-block img"></div>
+                <div class="skeleton-block line"></div>
+                <div class="skeleton-block line short"></div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        try {
+          const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ query })
+          });
+
+          const result = await response.json();
+
+          console.log("FULL BACKEND RESPONSE:", result);
+
+          if (!response.ok) {
+            throw new Error(result.detail || "Backend error");
+          }
+
+          const travelData = normalizeTravelResponse(result);
+          renderTravelPlan(travelData, result.thread_id);
+
+        } catch (error) {
+          console.error("Frontend error:", error);
+
+          resultBox.innerHTML = `
+            <div class="alert">
+              <strong>Something went wrong.</strong>
+              <p>${escapeHtml(error.message)}</p>
+              <p>Make sure backend is running on http://127.0.0.1:8000</p>
+            </div>
+          `;
+        }
+      });
+
+      function normalizeTravelResponse(result) {
+        let data = result.data || result;
+
+        if (typeof data === "string") {
+          try {
+            data = JSON.parse(data);
+          } catch (e) {
+            return {
+              flights: [],
+              hotels: [],
+              weather: null,
+              visa: null,
+              budget: null,
+              rawText: data
+            };
+          }
+        }
+
+        if (!data || typeof data !== "object") {
+          data = {};
+        }
+
+        const rawOutput = result.raw_output || "";
+
+        let parsedRaw = null;
+
+        if (typeof rawOutput === "string") {
+          try {
+            parsedRaw = JSON.parse(rawOutput);
+          } catch (e) {
+            parsedRaw = null;
+          }
+        }
+
+        const finalData = parsedRaw || data;
+
+        return {
+          flights:
+            finalData.flights ||
+            finalData.flight_options ||
+            finalData.best_flights ||
+            finalData.other_flights ||
+            finalData.flight_results ||
+            [],
+
+          hotels:
+            finalData.hotels ||
+            finalData.hotel_options ||
+            finalData.properties ||
+            finalData.hotel_results ||
+            [],
+
+          weather:
+            finalData.weather ||
+            finalData.weather_info ||
+            null,
+
+          visa:
+            finalData.visa ||
+            finalData.visa_information ||
+            finalData.visa_info ||
+            null,
+
+          budget:
+            finalData.budget ||
+            finalData.budget_analysis ||
+            null,
+
+          rawText:
+            typeof rawOutput === "string" ? rawOutput : ""
+        };
+      }
+
+      function renderTravelPlan(data, threadId) {
+        const flights = Array.isArray(data.flights) ? data.flights : [];
+        const hotels = Array.isArray(data.hotels) ? data.hotels : [];
+        const computedBudget = calculateBudget(flights, hotels);
+
+        resultBox.innerHTML = `
+          <div class="results-wrapper fade-in-up">
+            <div class="results-header">
+              <div>
+                <div class="eyebrow">AI Generated Plan</div>
+                <h2>Your Travel Dashboard</h2>
+                <p class="results-subtitle">
+                  Curated flights, hotels, budget, weather and visa information in one clean view.
+                </p>
+              </div>
+
+              <div class="result-meta">
+                <span class="result-badge">✈️ Flights: ${flights.length}</span>
+                <span class="result-badge">🏨 Hotels: ${hotels.length}</span>
+              </div>
+            </div>
+
+            <div class="dashboard-grid">
+              <div class="panel panel-large">
+                <div class="panel-title">
+                  <h3>✈️ Flight Options</h3>
+                  <span class="panel-chip">${flights.length || 0} found</span>
+                </div>
+                ${renderFlights(flights)}
+              </div>
+
+              <div class="panel panel-small">
+                <div class="panel-title">
+                  <h3>🌤️ Weather</h3>
+                </div>
+                ${renderWeather(data.weather)}
+              </div>
+
+              <div class="panel panel-large">
+                <div class="panel-title">
+                  <h3>🏨 Hotel Options</h3>
+                  <span class="panel-chip">${hotels.length || 0} found</span>
+                </div>
+                ${renderHotels(hotels)}
+              </div>
+
+              <div class="panel panel-budget">
+                <div class="panel-title">
+                  <h3>💰 Budget</h3>
+                </div>
+                ${renderBudget(data.budget, computedBudget)}
+              </div>
+
+              <div class="panel panel-small">
+                <div class="panel-title">
+                  <h3>🛂 Visa Information</h3>
+                </div>
+                ${renderVisa(data.visa)}
+              </div>
+
+              ${data.rawText ? `
+                <div class="panel panel-large">
+                  <div class="panel-title">
+                    <h3>📝 Agent Response</h3>
+                  </div>
+                  ${renderRawText(data.rawText)}
+                </div>
+              ` : ""}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderFlights(flights) {
+        if (!flights.length) {
+          return `
+            <div class="empty-state">
+              <div>
+                <strong>No flight data available</strong>
+                <p>Backend did not return flight options. Try future dates like 2026-10-01.</p>
+              </div>
+            </div>
+          `;
+        }
+
+        const cards = flights.slice(0, 6).map((flight, index) => {
+          const airline = getFlightAirline(flight);
+          const departure = getValue(flight, ["departure_airport", "departure", "from", "departure_id"], "Departure");
+          const arrival = getValue(flight, ["arrival_airport", "arrival", "to", "arrival_id"], "Arrival");
+          const route = getValue(flight, ["route"], `${departure} → ${arrival}`);
+          const duration = getValue(flight, ["duration", "total_duration"], "N/A");
+          const price = getPrice(flight);
+          const stops = getValue(flight, ["stops", "layovers"], "N/A");
+          const link = getValue(flight, ["booking_link", "link", "url"], "#");
+          const image = getFlightImage(airline);
+
+          return `
+            <div class="result-card">
+              <div class="image-wrap">
+                <img class="flight-image" src="${image}" alt="${escapeHtml(airline)} flight" />
+                <span class="image-badge">Flight ${index + 1}</span>
+              </div>
+
+              <div class="card-header-row">
+                <div>
+                  <div class="card-kicker">Airline</div>
+                  <h4>${escapeHtml(airline)}</h4>
+                </div>
+                <div class="price-pill">${price ? "$" + price : "N/A"}</div>
+              </div>
+
+              <div class="card-body-list">
+                <div>
+                  <span>Route</span>
+                  <strong>${escapeHtml(route)}</strong>
+                </div>
+                <div>
+                  <span>Duration</span>
+                  <strong>${escapeHtml(String(duration))}</strong>
+                </div>
+                <div>
+                  <span>Stops</span>
+                  <strong>${escapeHtml(String(stops))}</strong>
+                </div>
+              </div>
+
+              ${link !== "#" ? `
+                <a class="btn-link" href="${link}" target="_blank" rel="noopener noreferrer">Book Flight</a>
+              ` : `
+                <span class="muted">Booking link not available</span>
+              `}
+            </div>
+          `;
+        }).join("");
+
+        return `<div class="card-grid">${cards}</div>`;
+      }
+
+      function renderHotels(hotels) {
+        if (!hotels.length) {
+          return `
+            <div class="empty-state">
+              <div>
+                <strong>No hotel data available</strong>
+                <p>Backend did not return hotel options. Try a city name and future dates.</p>
+              </div>
+            </div>
+          `;
+        }
+
+        const cards = hotels.slice(0, 6).map((hotel, index) => {
+          const name = getValue(hotel, ["name", "title"], "Hotel");
+          const location = getValue(hotel, ["location", "address", "neighborhood"], "Location not available");
+          const rating = getValue(hotel, ["rating", "extracted_hotel_class", "hotel_class"], "N/A");
+          const price = getPrice(hotel);
+          const link = getValue(hotel, ["link", "booking_link", "url"], "#");
+          const image = getHotelImageFromData(hotel, name, location);
+
+          const amenities = getHotelAmenities(hotel);
+
+          return `
+            <div class="result-card">
+              <div class="image-wrap">
+                <img class="card-image" src="${image}" alt="${escapeHtml(name)} hotel" />
+                <span class="image-badge">⭐ ${escapeHtml(String(rating))}</span>
+              </div>
+
+              <div class="card-header-row">
+                <div>
+                  <div class="card-kicker">Hotel</div>
+                  <h4>${escapeHtml(name)}</h4>
+                </div>
+                <div class="price-pill">${price ? "$" + price : "N/A"}</div>
+              </div>
+
+              <div class="card-body-list compact">
+                <div>
+                  <span>Location</span>
+                  <strong>${escapeHtml(location)}</strong>
+                </div>
+              </div>
+
+              ${amenities.length ? `
+                <div class="amenities">
+                  ${amenities.slice(0, 4).map(item => `<span>${escapeHtml(item)}</span>`).join("")}
+                </div>
+              ` : ""}
+
+              ${link !== "#" ? `
+                <a class="btn-link" href="${link}" target="_blank" rel="noopener noreferrer">View Hotel</a>
+              ` : `
+                <span class="muted">Hotel link not available</span>
+              `}
+            </div>
+          `;
+        }).join("");
+
+        return `<div class="card-grid">${cards}</div>`;
+      }
+
+      function renderWeather(weather) {
+        if (!weather || typeof weather !== "object" || Object.keys(weather).length === 0) {
+          return `
+            <div class="mini-card-content">
+              <div class="mini-icon">🌤️</div>
+              <div>
+                <h4>Weather unavailable</h4>
+                <p class="muted">
+                  Your backend weather endpoint is still dummy. Connect WeatherAPI or OpenWeather to show real temperature.
+                </p>
+              </div>
+            </div>
+          `;
+        }
+
+        const temp = getValue(weather, ["temperature", "temp", "current_temp"], "N/A");
+        const condition = getValue(weather, ["condition", "description", "summary"], "Weather information");
+        const city = getValue(weather, ["city", "location", "destination"], "Destination");
+
+        return `
+          <div class="weather-mini">
+            <div class="mini-card-content">
+              <div class="mini-icon">🌤️</div>
+              <div>
+                <h4>${escapeHtml(city)}</h4>
+                <p class="muted">${escapeHtml(condition)}</p>
+              </div>
+            </div>
+
+            <div class="weather-temp">${escapeHtml(String(temp))}°C</div>
+          </div>
+        `;
+      }
+
+      function renderVisa(visa) {
+        if (!visa || typeof visa !== "object" || Object.keys(visa).length === 0) {
+          return `
+            <div class="mini-card-content">
+              <div class="mini-icon">🛂</div>
+              <div>
+                <h4>Visa details unavailable</h4>
+                <p class="muted">
+                  Add nationality and destination country in the query to generate visa information.
+                </p>
+              </div>
+            </div>
+          `;
+        }
+
+        const required = getValue(visa, ["required", "visa_required", "status"], "Check required");
+        const details = getValue(visa, ["details", "message", "notes", "summary"], "");
+
+        return `
+          <div class="mini-card-content">
+            <div class="mini-icon">🛂</div>
+            <div>
+              <h4>Required: ${escapeHtml(String(required))}</h4>
+              <p class="visa-summary">${escapeHtml(String(details))}</p>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderBudget(budget, computedBudget) {
+        const finalBudget = {
+          totalFlightCost: Number(budget?.total_flight_cost || budget?.flight_cost || computedBudget.totalFlightCost || 0),
+          totalHotelCost: Number(budget?.total_hotel_cost || budget?.hotel_cost || computedBudget.totalHotelCost || 0),
+          totalTripCost: Number(budget?.total_trip_cost || budget?.total_cost || computedBudget.totalTripCost || 0),
+          budget: Number(budget?.budget || computedBudget.budget || 0),
+          remaining: Number(budget?.remaining || computedBudget.remaining || 0)
+        };
+
+        const progress = finalBudget.budget > 0
+          ? Math.min((finalBudget.totalTripCost / finalBudget.budget) * 100, 100)
+          : finalBudget.totalTripCost > 0
+            ? 65
+            : 0;
+
+        return `
+          <div class="budget-card">
+            <div class="budget-metrics">
+              <div>
+                <span>Flight Cost</span>
+                <strong>$${formatNumber(finalBudget.totalFlightCost)}</strong>
+              </div>
+
+              <div>
+                <span>Hotel Cost</span>
+                <strong>$${formatNumber(finalBudget.totalHotelCost)}</strong>
+              </div>
+
+              <div>
+                <span>Total Trip</span>
+                <strong>$${formatNumber(finalBudget.totalTripCost)}</strong>
+              </div>
+
+              <div>
+                <span>Remaining</span>
+                <strong>$${formatNumber(finalBudget.remaining)}</strong>
+              </div>
+            </div>
+
+            <div class="budget-progress-wrap">
+              <div class="budget-progress">
+                <span style="width: ${progress}%"></span>
+              </div>
+              <div class="budget-progress-label">
+                ${finalBudget.totalTripCost > 0
+                  ? "Estimated from available flight and hotel prices."
+                  : "Budget is empty because backend did not return numeric prices."}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderRawText(text) {
+        return `<pre class="raw-text">${escapeHtml(text)}</pre>`;
+      }
+
+      function getValue(obj, keys, fallback = "") {
+        for (const key of keys) {
+          if (obj && obj[key] !== undefined && obj[key] !== null && obj[key] !== "") {
+            if (typeof obj[key] === "object") {
+              if (obj[key].name) return obj[key].name;
+              if (obj[key].code) return obj[key].code;
+              return JSON.stringify(obj[key]);
+            }
+            return obj[key];
+          }
+        }
+        return fallback;
+      }
+
+      function getFlightAirline(flight) {
+        if (flight.airline) return flight.airline;
+        if (flight.name) return flight.name;
+        if (flight.carrier) return flight.carrier;
+
+        if (Array.isArray(flight.flights) && flight.flights.length) {
+          return flight.flights[0].airline || flight.flights[0].flight_number || "Airline";
+        }
+
+        return "Airline";
+      }
+
+      function getPrice(item) {
+        const possiblePrice =
+          item.price ||
+          item.price_total ||
+          item.extracted_price ||
+          item.total_price ||
+          item.rate_per_night?.extracted_lowest ||
+          item.total_rate?.extracted_lowest ||
+          item.price?.extracted ||
+          item.price?.value;
+
+        if (!possiblePrice) return 0;
+
+        if (typeof possiblePrice === "number") return Math.round(possiblePrice);
+
+        const cleaned = String(possiblePrice).replace(/[^0-9.]/g, "");
+        return Math.round(Number(cleaned)) || 0;
+      }
+
+      function calculateBudget(flights, hotels) {
+        const flightPrices = flights.map(getPrice).filter(price => price > 0);
+        const hotelPrices = hotels.map(getPrice).filter(price => price > 0);
+
+        const totalFlightCost = flightPrices.length ? flightPrices[0] : 0;
+        const totalHotelCost = hotelPrices.length ? hotelPrices[0] : 0;
+        const totalTripCost = totalFlightCost + totalHotelCost;
+
+        return {
+          totalFlightCost,
+          totalHotelCost,
+          totalTripCost,
+          budget: 0,
+          remaining: 0
+        };
+      }
+
+      function getHotelAmenities(hotel) {
+        const amenities =
+          hotel.amenities ||
+          hotel.extensions ||
+          hotel.features ||
+          [];
+
+        if (Array.isArray(amenities)) {
+          return amenities.map(item => String(item));
+        }
+
+        return [];
+      }
+
+      function getHotelImageFromData(hotel, name, location) {
+        return (
+          hotel.thumbnail ||
+          hotel.image ||
+          hotel.image_url ||
+          hotel.images?.[0]?.thumbnail ||
+          hotel.images?.[0]?.original_image ||
+          hotel.images?.[0] ||
+          getFallbackHotelImage(name, location)
+        );
+      }
+
+      function getFallbackHotelImage(name, location) {
+        const search = encodeURIComponent(`${name} ${location} hotel`);
+        return `https://source.unsplash.com/800x500/?hotel,travel,${search}`;
+      }
+
+      function getFlightImage(airline) {
+        const query = encodeURIComponent(`${airline} airplane`);
+        return `https://source.unsplash.com/800x400/?airplane,flight,${query}`;
+      }
+
+      function formatNumber(value) {
+        return Number(value || 0).toLocaleString();
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+    });
+  </script>
 </body>
 </html>

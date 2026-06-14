@@ -1,24 +1,29 @@
-fastapi
-uvicorn[standard]
-python-dotenv
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
 
-langchain
-langchain-core
-langchain-community
-langchain-openai
-langchain-groq
-langgraph
+langchain==0.3.26
+langchain-core==0.3.68
+langchain-community==0.3.27
+langchain-groq==0.3.6
+langgraph==0.2.34
+groq>=0.29.0,<1
 
-groq
-pydantic
-requests
-httpx
-google-search-results
+pydantic==2.11.7
+pydantic-core==2.33.2
 
-beautifulsoup4
-lxml
+python-dotenv==1.1.0
+requests==2.32.4
 
-python-multipart
-aiofiles
+uuid-utils==0.11.0
 
-sqlalchemy
+httpx==0.28.1
+aiohttp==3.12.13
+
+jinja2==3.1.6
+python-multipart==0.0.20
+
+tiktoken==0.9.0
+tenacity==9.1.2
+orjson==3.10.18
+sqlalchemy==2.0.28
+psycopg2-binary==2.9.6

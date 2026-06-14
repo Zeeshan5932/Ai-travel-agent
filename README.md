@@ -39,11 +39,30 @@ Run the backend and frontend in two separate terminals.
 
 ### 1. Start the backend API
 
-From the repository root, run:
+From the repository root, create and activate a virtual environment then run the server. Use the commands below for Windows (PowerShell) or macOS/Linux terminals.
 
-```shell script
-uvicorn backend.app:app --reload --host 127.0.0.1 --port 8000
+Windows (PowerShell):
+
+```powershell
+python -m venv venv
+venv\Scripts\Activate.ps1    # use `venv\Scripts\activate` in cmd.exe
+pip install -r backend/requirements.txt
+python -m uvicorn app:app --reload --host 127.0.0.1 --port 8000
 ```
+
+macOS / Linux:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r backend/requirements.txt
+python -m uvicorn backend.app:app --reload --host 127.0.0.1 --port 8000
+```
+
+Notes:
+
+- Use the `python` command that points to your intended interpreter. The error "No Python at '...Python310\\python.exe'" happens when the virtual environment references a Python executable that no longer exists. Recreate the venv with a valid Python installation as shown above.
+- Running `python -m uvicorn ...` ensures the `uvicorn` process runs with the same Python environment as your `venv`.
 
 The FastAPI backend will be available at `http://localhost:8000`, and the interactive API docs are at `http://localhost:8000/docs`.
 
@@ -71,6 +90,27 @@ python -m venv venv
 venv\Scripts\activate
 pip install -r backend/requirements.txt
 ```
+
+If you prefer to run the backend from the `backend` folder using the same commands you showed (`uvicorn app:app --reload`), use the venv Python to ensure the `uvicorn` executable is the one from the virtual environment:
+
+Windows (from repository root):
+
+```powershell
+cd backend
+python -m venv ..\venv    # if you created venv in repo root as shown above
+..\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m uvicorn app:app --reload --host 127.0.0.1 --port 8000
+```
+
+If you still get the error about `No Python at '...Python310\\python.exe'`, reinstall `uvicorn` inside the active virtualenv to recreate the correct launcher scripts:
+
+```powershell
+# activate your venv first (see above), then run:
+python -m pip install --upgrade --force-reinstall "uvicorn[standard]"
+```
+
+This ensures the `uvicorn.exe` / script points to the venv Python and not a stale system-wide installer.
 
 ## **Store Your API Keys**
 
