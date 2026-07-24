@@ -58,11 +58,11 @@ const bodyParser = require("body-parser");
 const axios = require("axios");
 const path = require("path");
 const marked = require("marked");
-const serverless = require("serverless-http");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BACKEND_URL = process.env.BACKEND_URL || process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+const isProduction = process.env.NODE_ENV === "production";
+const BACKEND_URL = process.env.BACKEND_URL || process.env.REACT_APP_BACKEND_URL || (isProduction ? "" : "http://localhost:8000");
 
 // -----------------------------
 // View Engine Setup
@@ -89,6 +89,14 @@ function renderIndex(res, options = {}) {
   });
 }
 
+function getBackendUrl(route) {
+  if (!BACKEND_URL) {
+    throw new Error("BACKEND_URL is not configured.");
+  }
+
+  return `${BACKEND_URL}${route.startsWith("/") ? route : `/${route}`}`;
+}
+
 // -----------------------------
 // Routes
 // -----------------------------
@@ -101,7 +109,8 @@ app.get("/", (req, res) => {
 app.post("/travel", async (req, res) => {
   try {
     console.log('Frontend /travel called with body:', req.body);
-    const apiResponse = await axios.post(`${BACKEND_URL}/travel`, {
+    const targetUrl = getBackendUrl("/travel");
+    const apiResponse = await axios.post(targetUrl, {
       query: req.body.query,
     });
 
@@ -133,7 +142,8 @@ app.post("/travel", async (req, res) => {
 
 app.post("/budget-analysis", async (req, res) => {
   try {
-    const apiResponse = await axios.post(`${BACKEND_URL}/budget-analysis`, req.body);
+    const targetUrl = getBackendUrl("/budget-analysis");
+    const apiResponse = await axios.post(targetUrl, req.body);
     return res.json(apiResponse.data);
   } catch (error) {
     return res.status(500).json({ error: error.response?.data?.detail || error.message });
@@ -142,7 +152,8 @@ app.post("/budget-analysis", async (req, res) => {
 
 app.post("/weather", async (req, res) => {
   try {
-    const apiResponse = await axios.post(`${BACKEND_URL}/weather`, req.body);
+    const targetUrl = getBackendUrl("/weather");
+    const apiResponse = await axios.post(targetUrl, req.body);
     return res.json(apiResponse.data);
   } catch (error) {
     return res.status(500).json({ error: error.response?.data?.detail || error.message });
@@ -151,7 +162,8 @@ app.post("/weather", async (req, res) => {
 
 app.post("/visa-info", async (req, res) => {
   try {
-    const apiResponse = await axios.post(`${BACKEND_URL}/visa-info`, req.body);
+    const targetUrl = getBackendUrl("/visa-info");
+    const apiResponse = await axios.post(targetUrl, req.body);
     return res.json(apiResponse.data);
   } catch (error) {
     return res.status(500).json({ error: error.response?.data?.detail || error.message });
@@ -164,5 +176,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = serverless(app);
-// module.exports.default = serverless(app);
+module.exports = app;
