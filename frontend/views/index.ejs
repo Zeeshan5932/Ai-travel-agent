@@ -76,7 +76,8 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const API_URL = "http://127.0.0.1:8000/travel";
+      const backendBaseUrl = "<%= backendUrl || 'http://localhost:8000' %>";
+      const API_URL = `${backendBaseUrl}/travel`;
 
       const form = document.getElementById("travelForm");
       const queryInput = document.getElementById("query");
@@ -149,7 +150,7 @@
             <div class="alert">
               <strong>Something went wrong.</strong>
               <p>${escapeHtml(error.message)}</p>
-              <p>Make sure backend is running on http://127.0.0.1:8000</p>
+              <p>Make sure backend is running on ${backendBaseUrl}</p>
             </div>
           `;
         }
@@ -830,7 +831,8 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const API_URL = "<%= backendUrl %>/travel";
+      const backendBaseUrl = "<%= backendUrl || 'http://localhost:8000' %>";
+      const API_URL = `${backendBaseUrl}/travel`;
 
       const form = document.getElementById("travelForm");
       const queryInput = document.getElementById("query");
@@ -931,7 +933,7 @@
             <div class="alert">
               <strong>Something went wrong.</strong>
               <p>${escapeHtml(error.message)}</p>
-              <p>Make sure backend is running on http://127.0.0.1:8000</p>
+              <p>Make sure backend is running on ${backendBaseUrl}</p>
             </div>
           `;
         }

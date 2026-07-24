@@ -46,13 +46,24 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Development only
+    allow_origins=[os.getenv("FRONTEND_URL", "http://localhost:3000")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 agent = Agent()
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", 8000)),
+        reload=False,
+    )
 
 # -----------------------------
 # Request Models

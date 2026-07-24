@@ -62,7 +62,7 @@ const marked = require("marked");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === "production";
-const BACKEND_URL = process.env.BACKEND_URL || process.env.REACT_APP_BACKEND_URL || (isProduction ? "" : "http://localhost:8000");
+const BACKEND_URL = process.env.BACKEND_URL || process.env.REACT_APP_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || (isProduction ? "" : "http://localhost:8000");
 
 // -----------------------------
 // View Engine Setup
@@ -85,7 +85,7 @@ function renderIndex(res, options = {}) {
     data: options.data || null,
     response: options.response || null,
     error: options.error || null,
-    backendUrl: BACKEND_URL,
+    backendUrl: BACKEND_URL || "http://localhost:8000",
   });
 }
 
