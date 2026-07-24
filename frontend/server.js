@@ -58,10 +58,11 @@ const bodyParser = require("body-parser");
 const axios = require("axios");
 const path = require("path");
 const marked = require("marked");
+const serverless = require("serverless-http");
 
 const app = express();
-const PORT = 3000;
-const BACKEND_URL = "http://localhost:8000";
+const PORT = process.env.PORT || 3000;
+const BACKEND_URL = process.env.BACKEND_URL || process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
 
 // -----------------------------
 // View Engine Setup
@@ -84,6 +85,7 @@ function renderIndex(res, options = {}) {
     data: options.data || null,
     response: options.response || null,
     error: options.error || null,
+    backendUrl: BACKEND_URL,
   });
 }
 
@@ -156,6 +158,11 @@ app.post("/visa-info", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Frontend running at http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Frontend running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = serverless(app);
+module.exports.default = serverless(app);
