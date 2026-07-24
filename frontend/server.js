@@ -165,4 +165,4 @@ if (require.main === module) {
 }
 
 module.exports = serverless(app);
-module.exports.default = serverless(app);
+// module.exports.default = serverless(app);
